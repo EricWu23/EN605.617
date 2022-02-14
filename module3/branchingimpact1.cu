@@ -170,43 +170,51 @@ void main_sub0(int numBlocks,int blockSize)
     // memory copy from cpu to gpu
     cudaMemcpy( gpu_array0,cpu_array0 , size_in_bytes, cudaMemcpyHostToDevice );
     cudaMemcpy( gpu_array1,cpu_array1 , size_in_bytes, cudaMemcpyHostToDevice );
-  
-  
-	auto start = std::chrono::high_resolution_clock::now(); 
+                                             
+  auto start = std::chrono::high_resolution_clock::now();
+  for(int k=0;k<1000;k++)
+  { 
 	Kernel1<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);
-	auto stop = std::chrono::high_resolution_clock::now();
+  }   
+  auto stop = std::chrono::high_resolution_clock::now();
 	
-	cudaMemcpy(cpu_result, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
-	printf("Kernel1 is called! \n");
+  cudaMemcpy(cpu_result, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+ printf("Kernel1 is called 1000 times! \n");
 			printf("Array Result:\n");
 			print_array(cpu_result);
-			std::cout << "Time taken by GPU: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start).count() << "ns\n";
+			std::cout << "Total Time taken by GPU: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start).count() << "ns\n";
 			printf("--------------------------------------------\n");
-			
-  	auto start = std::chrono::high_resolution_clock::now(); 
-	Kernel2<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);
-	auto stop = std::chrono::high_resolution_clock::now();
+	 
+    start = std::chrono::high_resolution_clock::now();
+    for(int k=0;k<1000;k++)
+    {
+        Kernel2<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);
+	}
+    stop = std::chrono::high_resolution_clock::now();
 	
-	cudaMemcpy(cpu_result, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
-	printf("Kernel2 is called! \n");
+    cudaMemcpy(cpu_result, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+	printf("Kernel2 is called 1000 times! \n");
 			printf("Array Result:\n");
 			print_array(cpu_result);
-			std::cout << "Time taken by GPU: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start).count() << "ns\n";
+			std::cout << "Total Time taken by GPU: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start).count() << "ns\n";
 			printf("--------------------------------------------\n");
 
-
-    auto start = std::chrono::high_resolution_clock::now(); 
-	Kernel2<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);
-	auto stop = std::chrono::high_resolution_clock::now();
+    start = std::chrono::high_resolution_clock::now();
+    for(int k=0;k<1000;k++)
+    {
+        Kernel3<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);
+	}
+    stop = std::chrono::high_resolution_clock::now();
 	
-	cudaMemcpy(cpu_result, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
-	printf("Kernel2 is called! \n");
+    cudaMemcpy(cpu_result, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+	printf("Kernel3 is called 1000 times! \n");
 			printf("Array Result:\n");
 			print_array(cpu_result);
-			std::cout << "Time taken by GPU: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start).count() << "ns\n";
+			std::cout << "Total Time taken by GPU: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start).count() << "ns\n";
 			printf("--------------------------------------------\n");
+
+   
     
-                                
     /* Free the arrays on the GPU as now we're done with them */
     cudaFree(gpu_array0);
 	cudaFree(gpu_array1);
