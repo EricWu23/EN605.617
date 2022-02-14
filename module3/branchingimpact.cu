@@ -9,8 +9,11 @@
 #include <stdlib.h>
 #include <chrono>
 #include <iostream>
+
+#ifndef ARRAY_SIZE_X  
+    #define ARRAY_SIZE_X 512 // column of the 2D array// this can be defined in Makefile through commandline overide (-D flag for compiler)
+#endif
     
-//#define ARRAY_SIZE_X 512 // column of the 2D array// this line comment out because it is defined in Makefile
 #define ARRAY_SIZE_Y 1  //row of the 2D array
 
 #define WARP 32
@@ -83,7 +86,7 @@ __global__ void branchKernel(int *array0,int *array1,int* arrayresult,int kernel
 						}
                    }break;                    
                                                
-            default: exit(1); break;                                                                                                             
+            default: break;                                                                                                             
       }
 }    
 
@@ -183,7 +186,7 @@ void main_sub0(int numBlocks,int blockSize)
     for(int kernel=0; kernel<4; kernel++)
     {
 		auto start = std::chrono::high_resolution_clock::now(); 
-		branchKernel(gpu_array0,gpu_array1,gpu_arrayresult,kernelselect);
+		branchKernel<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult,kernel);
 		auto stop = std::chrono::high_resolution_clock::now();
 		
 			

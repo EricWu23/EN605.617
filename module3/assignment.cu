@@ -4,7 +4,10 @@
 #include <chrono>
 #include <iostream>
     
-//#define ARRAY_SIZE_X 512 // column of the 2D array// this line comment out because it is defined in Makefile
+#ifndef ARRAY_SIZE_X  
+    #define ARRAY_SIZE_X 512 // column of the 2D array// this can be defined in Makefile through commandline overide (-D flag for compiler)
+#endif
+    
 #define ARRAY_SIZE_Y 1  //row of the 2D array
 
 #define WARP 32
