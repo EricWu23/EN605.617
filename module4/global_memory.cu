@@ -11,10 +11,10 @@
 #include <stdlib.h>
 #include <assert.h>
 
-static const int WORK_SIZE = 256;
+static const int WORK_SIZE = 256;// threads per block
 
 #define NUM_ELEMENTS 4096
-
+// interleaved struct
 typedef struct {
 	unsigned int a;
 	unsigned int b;
@@ -24,6 +24,7 @@ typedef struct {
 
 typedef INTERLEAVED_T INTERLEAVED_ARRAY_T[NUM_ELEMENTS];
 
+//non-interleaved struct
 typedef unsigned int ARRAY_MEMBER_T[NUM_ELEMENTS];
 
 typedef struct {
@@ -122,7 +123,7 @@ __global__ void add_kernel_non_interleaved(
 		}
 	}
 }
-
+/* call kernel "add_kernel_interleaved" and time how fast it runs*/
 __host__ float add_test_interleaved(INTERLEAVED_T * const host_dest_ptr,
 		const INTERLEAVED_T * const host_src_ptr, const unsigned int iter,
 		const unsigned int num_elements)
@@ -165,7 +166,13 @@ __host__ float add_test_interleaved(INTERLEAVED_T * const host_dest_ptr,
 
 	return delta;
 }
-
+/* 
+Function description: Sample data stored at src_data by a specifed interval
+	sample_data:  destination address
+	sample_interval: sample data once every sample_interval 
+	num_elements: Total num of samples to collect
+	src_data: starting address of the source data being sampled
+*/
 __host__ float select_samples_cpu(unsigned int * const sample_data,
 									const unsigned int sample_interval,
 									const unsigned int num_elements,
@@ -193,7 +200,7 @@ __host__ float select_samples_cpu(unsigned int * const sample_data,
 	cudaEventElapsedTime(&delta, kernel_start, kernel_stop);
 	return delta;
 }
-
+/* call kernel "select_samples_gpu_kernel" and time how fast it runs*/
 __global__ void select_samples_gpu_kernel(unsigned int * const sample_data,
 											const unsigned int sample_interval,
 											const unsigned int * const src_data)
@@ -330,7 +337,7 @@ __global__ void count_bins_gpu_kernel5(const unsigned int num_samples,
 
 	atomicAdd(&bin_count[idx],1);
 }
-
+/* call kernel "count_bins_gpu_kernel5" and time how fast it runs*/
 __host__ float count_bins_gpu(const unsigned int num_samples,
 										const unsigned int * const src_data,
 										const unsigned int * const sample_data,
@@ -403,19 +410,20 @@ void execute_gpu_functions()
 	void *d = NULL;
 	unsigned int idata[WORK_SIZE], odata[WORK_SIZE];
 	int i;
+	//host data initialization
 	for (i = 0; i < WORK_SIZE; i++)
 		idata[i] = (unsigned int) i;
-
+// device memory allocation
 	cudaMalloc((void** ) &d, sizeof(int) * WORK_SIZE);
-	
+//explicit memory copy from host to device	
 			cudaMemcpy(d, idata, sizeof(int) * WORK_SIZE,
-					cudaMemcpyHostToDevice);
+					cudaMemcpyHostToDevice);//idata-->d
 
-	bitreverse<<<1, WORK_SIZE, WORK_SIZE * sizeof(int)>>>(d);
+	bitreverse<<<1, WORK_SIZE, WORK_SIZE * sizeof(int)>>>(d);//  <<??,??,??>>
 
 	cudaThreadSynchronize();	// Wait for the GPU launched work to complete
 	cudaGetLastError();
-	
+	// explicit memory copy from device to host
 			cudaMemcpy(odata, d, sizeof(int) * WORK_SIZE,
 					cudaMemcpyDeviceToHost);
 
