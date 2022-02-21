@@ -66,32 +66,27 @@ __global__ void arrayMod(int *array0,int *array1,int* arraymod) {
 // function to print out a 2D array for debugging
 void print_array(int** arr, int num_row, int num_col)
 {
-    
+    printf("--------------------------------------------\n");
           for(int i=0; i<num_col; i++)
       {
             for(int j=0; j<num_row; j++)
             {
               if (i== num_col-1)
                 {
-					//arr[0][0]=0;
                   printf("%i\n", arr[j][i]);
                 }
               else
                 {
-					//arr[0][0]=0;
-					
-                  //printf("%i ", arr[j][i]);
-				  //printf("%i ", *(*(arr+j)+i));
-				  //*(*(arr+j))=0;
-				  printf("%i ", *(*(arr+j)));
-				  
+				
+                  printf("%i ", arr[j][i]);
+			  
                 }
     
             }
          
      }
     
-    
+    printf("--------------------------------------------\n");
     
 }
 
@@ -140,7 +135,6 @@ void  cpu_array1_int(int** arr,int num_row,int num_column){
 	 {
 			for(int j=0; j<num_column; j++)
 			{
-				 //arr[i][j]=i*num_column+j;// the first array contain value from 0 to (totalThreads-1)
 				 arr[i][j]=rand() % 4;// generate value of second array element as a random number between 0 and 3
 			}    
 	 
@@ -158,11 +152,7 @@ void main_sub0(int numBlocks,int blockSize)
 	/* dynamically allocate the pinned memory on the host*/
 	int **cpu_array0,**cpu_array1,**cpu_array_res; 
 
-    // cpu_array0 = (int **)malloc(sizeof(int *) * cpu_arr_size_y);
-    // cpu_array0[0] = (int *)malloc(sizeof(int) * cpu_arr_size_x* cpu_arr_size_y);	
-	// for(int i = 1; i < cpu_arr_size_y; i++){
-		 // cpu_array0[i] = cpu_array0[0] + i * cpu_arr_size_x;
-	// }
+
 			
 	cudaMallocHost((void**)&cpu_array0,sizeof(int *) * cpu_arr_size_y);	
 	cudaMallocHost((void**)&(*cpu_array0),sizeof(int) * cpu_arr_size_x* cpu_arr_size_y);	
@@ -184,19 +174,14 @@ void main_sub0(int numBlocks,int blockSize)
 		cpu_array_res[i] = cpu_array_res[0] + i * cpu_arr_size_y;
 	}
 	
-	printf("I am here 2! \n");
-	
     /* data init*/
-    //cpu_array0_int(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
-	//printf("I am here 3! \n");
-	//cpu_array1_int(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
+    cpu_array0_int(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
+	cpu_array1_int(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
 	
 	
 	/* print out the arrays for debuging */
 	printf("The following two arrays are initialized on cpu! \n");
-	printf("Array0:\n");
 	print_array(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
-	printf("Array1:\n");
 	print_array(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);	
      
     /* layout specification
@@ -208,11 +193,8 @@ void main_sub0(int numBlocks,int blockSize)
     
     /* Declare statically arrays */
     int * gpu_array0, * gpu_array1,*gpu_arrayresult;
-    
-
-    //printf("size_in_bytes:%i\n",size_in_bytes);
-    // memory allocation on GPU
-    cudaMalloc((void **)&gpu_array0, size_in_bytes);
+       
+    cudaMalloc((void **)&gpu_array0, size_in_bytes);// memory allocation on GPU
 	cudaMalloc((void **)&gpu_array1, size_in_bytes);
     cudaMalloc((void **)&gpu_arrayresult, size_in_bytes);
     
