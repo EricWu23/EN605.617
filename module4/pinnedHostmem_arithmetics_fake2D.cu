@@ -64,7 +64,7 @@ __global__ void arrayMod(int *array0,int *array1,int* arraymod) {
 
 
 // function to print out a 2D array for debugging
-void print_array(int** arr, int num_row, int num_col)
+void print_array(int* arr, int num_row, int num_col)
 {
     
           for(int i=0; i<num_col; i++)
@@ -73,19 +73,19 @@ void print_array(int** arr, int num_row, int num_col)
             {
               if (i== num_col-1)
                 {
-                  printf("%i\n", arr[j][i]);
+                  printf("%i\n", arr[j*num_col+i]);
                 }
               else
                 {
-                  printf("%i ", arr[j][i]);
+	
+				  printf("%i ", arr[j*num_col+i]);
+				  
                 }
     
             }
          
      }
-    
-    
-    
+          
 }
 
 
@@ -103,29 +103,30 @@ int** cpu_2darray_Malloc(int num_row,int num_column)
 	 return cpu_arr;
 }
 
+/* Dynamically allocate an 2D array using pinned memory on the host and return the pointer */
+void cpu_2darray_cudaMallocHost(int** cpu_arr,size_t size)
+{
+ 
+
+}
 
 
 
 /* initialize the data in the array according to assignment requirement*/
-void cpu_array0_int(int** arr,int num_row,int num_column){
+void cpu_array0_int(int* arr,int num_row,int num_column){
 		
 	 //2D array intialization 		
 	 for(int i=0; i<num_row; i++)
 	 {
 			for(int j=0; j<num_column; j++)
-			{
-				 arr[i][j]=i*num_column+j;// the first array contain value from 0 to (totalThreads-1)
-				 //cpu_array1[i][j]=rand() % 4;// generate value of second array element as a random number between 0 and 3
+			{		
+				 arr[i*num_column+j]=i*num_column+j;
 			}    
 	 
 	 }				
-
-
-         // printf("--------------------------------------------\n");
-
 }
 /* initialize the data in the array according to assignment requirement*/
-void  cpu_array1_int(int** arr,int num_row,int num_column){
+void  cpu_array1_int(int* arr,int num_row,int num_column){
 		
 	 //2D array intialization 		
 	 for(int i=0; i<num_row; i++)
@@ -133,7 +134,7 @@ void  cpu_array1_int(int** arr,int num_row,int num_column){
 			for(int j=0; j<num_column; j++)
 			{
 				 //arr[i][j]=i*num_column+j;// the first array contain value from 0 to (totalThreads-1)
-				 arr[i][j]=rand() % 4;// generate value of second array element as a random number between 0 and 3
+				 arr[i*num_column+j]=rand() % 4;// generate value of second array element as a random number between 0 and 3
 			}    
 	 
 	 }		
@@ -143,20 +144,28 @@ void  cpu_array1_int(int** arr,int num_row,int num_column){
 void main_sub0(int numBlocks,int blockSize)
 {
 	int totalThreads=numBlocks*blockSize;
-	int cpu_arr_size_y=1;
-	int cpu_arr_size_x=totalThreads;
-
-	/* dynamically allocate the memory on the host*/
-	int** cpu_array0,**cpu_array1,**cpu_array_res; 
+	int cpu_arr_size_y=1;//row
+	int cpu_arr_size_x=totalThreads;//column
+    int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
 	
-	 cpu_array0=cpu_2darray_Malloc(cpu_arr_size_y,cpu_arr_size_x);
-	 cpu_array1=cpu_2darray_Malloc(cpu_arr_size_y,cpu_arr_size_x);
-	 cpu_array_res=cpu_2darray_Malloc(cpu_arr_size_y,cpu_arr_size_x);
+	/* dynamically allocate the pinned memory on the host*/
+	int *cpu_array0,*cpu_array1,*cpu_array_res; 
+	
+	//cpu_array0 = (int *) malloc((cpu_arr_size_y * cpu_arr_size_x) * sizeof(int));
+	//cpu_array1 = (int *)malloc((cpu_arr_size_y * cpu_arr_size_x) * sizeof(int));
+	//cpu_array_res = (int *)malloc((cpu_arr_size_y * cpu_arr_size_x) * sizeof(int));
+	cudaMallocHost(&cpu_array0,size_in_bytes);
+	cudaMallocHost(&cpu_array1,size_in_bytes);
+	cudaMallocHost(&cpu_array_res,size_in_bytes);
+	
+	printf("I am here 1! \n");
 	
     /* data init*/
     cpu_array0_int(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
+	//printf("I am here 3! \n");
 	cpu_array1_int(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
 	
+		printf("I am here 2! \n");
 	/* print out the arrays for debuging */
 	printf("The following two arrays are initialized on cpu! \n");
 	printf("Array0:\n");
@@ -174,7 +183,7 @@ void main_sub0(int numBlocks,int blockSize)
     /* Declare statically arrays */
     int * gpu_array0, * gpu_array1,*gpu_arrayresult;
     
-    int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
+
     //printf("size_in_bytes:%i\n",size_in_bytes);
     // memory allocation on GPU
     cudaMalloc((void **)&gpu_array0, size_in_bytes);
@@ -182,8 +191,8 @@ void main_sub0(int numBlocks,int blockSize)
     cudaMalloc((void **)&gpu_arrayresult, size_in_bytes);
     
     // memory copy from cpu to gpu
-    cudaMemcpy( gpu_array0,*cpu_array0 , size_in_bytes, cudaMemcpyHostToDevice );
-    cudaMemcpy( gpu_array1,*cpu_array1 , size_in_bytes, cudaMemcpyHostToDevice );
+    cudaMemcpy( gpu_array0,cpu_array0 , size_in_bytes, cudaMemcpyHostToDevice );
+    cudaMemcpy( gpu_array1,cpu_array1 , size_in_bytes, cudaMemcpyHostToDevice );
   
     for(int kernel=0; kernel<4; kernel++)
     {
@@ -195,7 +204,7 @@ void main_sub0(int numBlocks,int blockSize)
     
                     auto stop = std::chrono::high_resolution_clock::now();
                                 
-                    cudaMemcpy(*cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+                    cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
                     
                      printf("Kernel 0 (Add) is called! \n");
                      printf("Array Result:\n");
@@ -211,7 +220,7 @@ void main_sub0(int numBlocks,int blockSize)
                     arraySubtract<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to subtract two 2-D arrays 
                     auto stop = std::chrono::high_resolution_clock::now();
     
-                     cudaMemcpy(*cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+                     cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
                      
                         printf("Kernel 1 (subtract) is called! \n");
                          printf("Array Result:\n");
@@ -227,7 +236,7 @@ void main_sub0(int numBlocks,int blockSize)
                      arrayMult<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise)multiply two 2-D arrays 
                     auto stop = std::chrono::high_resolution_clock::now();
     
-                     cudaMemcpy(*cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+                     cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
     
     
                      printf("Kernel 2 (multiplication) is called! \n");
@@ -241,7 +250,7 @@ void main_sub0(int numBlocks,int blockSize)
                     auto start = std::chrono::high_resolution_clock::now(); 
                      arrayMod<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise) mod divide two 2-D arrays 
                     auto stop = std::chrono::high_resolution_clock::now();
-                     cudaMemcpy(*cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+                     cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
                      printf("Kernel 3 (mod) is called! \n");
                      printf("Array Result:\n");
                      print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);  
@@ -259,9 +268,11 @@ void main_sub0(int numBlocks,int blockSize)
                               
     }
     /*Free the arrays on the CPU*/
-	free(cpu_array0);
-	free(cpu_array1);
-	free(cpu_array_res);
+	cudaFreeHost(cpu_array0);
+	cudaFreeHost(cpu_array1);
+	cudaFreeHost(cpu_array_res);
+	
+
     /* Free the arrays on the GPU as now we're done with them */
     cudaFree(gpu_array0);
 	cudaFree(gpu_array1);

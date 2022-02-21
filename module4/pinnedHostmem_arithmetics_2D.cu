@@ -73,11 +73,18 @@ void print_array(int** arr, int num_row, int num_col)
             {
               if (i== num_col-1)
                 {
+					//arr[0][0]=0;
                   printf("%i\n", arr[j][i]);
                 }
               else
                 {
-                  printf("%i ", arr[j][i]);
+					//arr[0][0]=0;
+					
+                  //printf("%i ", arr[j][i]);
+				  //printf("%i ", *(*(arr+j)+i));
+				  //*(*(arr+j))=0;
+				  printf("%i ", *(*(arr+j)));
+				  
                 }
     
             }
@@ -103,6 +110,12 @@ int** cpu_2darray_Malloc(int num_row,int num_column)
 	 return cpu_arr;
 }
 
+/* Dynamically allocate an 2D array using pinned memory on the host and return the pointer */
+void cpu_2darray_cudaMallocHost(int** cpu_arr,size_t size)
+{
+ 
+
+}
 
 
 
@@ -115,14 +128,9 @@ void cpu_array0_int(int** arr,int num_row,int num_column){
 			for(int j=0; j<num_column; j++)
 			{
 				 arr[i][j]=i*num_column+j;// the first array contain value from 0 to (totalThreads-1)
-				 //cpu_array1[i][j]=rand() % 4;// generate value of second array element as a random number between 0 and 3
 			}    
 	 
 	 }				
-
-
-         // printf("--------------------------------------------\n");
-
 }
 /* initialize the data in the array according to assignment requirement*/
 void  cpu_array1_int(int** arr,int num_row,int num_column){
@@ -145,17 +153,44 @@ void main_sub0(int numBlocks,int blockSize)
 	int totalThreads=numBlocks*blockSize;
 	int cpu_arr_size_y=1;
 	int cpu_arr_size_x=totalThreads;
-
-	/* dynamically allocate the memory on the host*/
-	int** cpu_array0,**cpu_array1,**cpu_array_res; 
+    int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
 	
-	 cpu_array0=cpu_2darray_Malloc(cpu_arr_size_y,cpu_arr_size_x);
-	 cpu_array1=cpu_2darray_Malloc(cpu_arr_size_y,cpu_arr_size_x);
-	 cpu_array_res=cpu_2darray_Malloc(cpu_arr_size_y,cpu_arr_size_x);
+	/* dynamically allocate the pinned memory on the host*/
+	int **cpu_array0,**cpu_array1,**cpu_array_res; 
+
+    // cpu_array0 = (int **)malloc(sizeof(int *) * cpu_arr_size_y);
+    // cpu_array0[0] = (int *)malloc(sizeof(int) * cpu_arr_size_x* cpu_arr_size_y);	
+	// for(int i = 1; i < cpu_arr_size_y; i++){
+		 // cpu_array0[i] = cpu_array0[0] + i * cpu_arr_size_x;
+	// }
+			
+	cudaMallocHost((void**)&cpu_array0,sizeof(int *) * cpu_arr_size_y);	
+	cudaMallocHost((void**)&(*cpu_array0),sizeof(int) * cpu_arr_size_x* cpu_arr_size_y);	
+	for(int i = 1; i < cpu_arr_size_y; i++){
+			printf("I should not be here! \n");
+		 cpu_array0[i] = *cpu_array0 + i * cpu_arr_size_x;
+	} 	
+	
+	printf("I am here 1! \n");
+	cpu_array1 = (int **)malloc(sizeof(int *) * cpu_arr_size_y);
+    cpu_array1[0] = (int *)malloc(sizeof(int) * cpu_arr_size_x* cpu_arr_size_y);
+	for(int i = 1; i < cpu_arr_size_y; i++){
+		cpu_array1[i] = cpu_array1[0] + i * cpu_arr_size_y;
+	}
+	
+	cpu_array_res = (int **)malloc(sizeof(int *) * cpu_arr_size_y);
+    cpu_array_res[0] = (int *)malloc(sizeof(int) * cpu_arr_size_x* cpu_arr_size_y);
+		for(int i = 1; i < cpu_arr_size_y; i++){
+		cpu_array_res[i] = cpu_array_res[0] + i * cpu_arr_size_y;
+	}
+	
+	printf("I am here 2! \n");
 	
     /* data init*/
-    cpu_array0_int(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
-	cpu_array1_int(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
+    //cpu_array0_int(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
+	//printf("I am here 3! \n");
+	//cpu_array1_int(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
+	
 	
 	/* print out the arrays for debuging */
 	printf("The following two arrays are initialized on cpu! \n");
@@ -174,7 +209,7 @@ void main_sub0(int numBlocks,int blockSize)
     /* Declare statically arrays */
     int * gpu_array0, * gpu_array1,*gpu_arrayresult;
     
-    int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
+
     //printf("size_in_bytes:%i\n",size_in_bytes);
     // memory allocation on GPU
     cudaMalloc((void **)&gpu_array0, size_in_bytes);
@@ -259,9 +294,28 @@ void main_sub0(int numBlocks,int blockSize)
                               
     }
     /*Free the arrays on the CPU*/
-	free(cpu_array0);
-	free(cpu_array1);
-	free(cpu_array_res);
+	//free(*cpu_array0);
+	//free(*cpu_array1);
+	//free(*cpu_array_res);
+    //free((void *)cpu_array0[0]);
+	//free((void *)cpu_array0);
+	
+	// for(int i = 0; i < cpu_arr_size_y; i++)
+	// {
+		// free((void *)cpu_array0[i]);
+	// }
+	// free((void *)cpu_array0);
+
+	
+	free((void *)cpu_array1[0]);
+	free((void *)cpu_array1);
+	
+	free((void *)cpu_array_res[0]);
+	free((void *)cpu_array_res);
+	
+	cudaFreeHost((void *)cpu_array0[0]);
+	cudaFreeHost((void *)cpu_array0);
+	//cudaFreeHost(*cpu_array0);
     /* Free the arrays on the GPU as now we're done with them */
     cudaFree(gpu_array0);
 	cudaFree(gpu_array1);
