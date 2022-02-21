@@ -66,19 +66,26 @@ __global__ void arrayMod(int *array0,int *array1,int* arraymod) {
 // function to print out a 2D array for debugging
 void print_array(int** arr, int num_row, int num_col)
 {
-    for (int i = 0; i < num_row; i++)
-    {
-        for (int j = 0; j < num_col; j++) {
-			 if (j== num_col-1)
+    
+          for(int i=0; i<num_col; i++)
+      {
+            for(int j=0; j<num_row; j++)
+            {
+              if (i== num_col-1)
                 {
-                  printf("%i\n", arr[i][j]);
+                  printf("%i\n", arr[j][i]);
                 }
               else
                 {
-                  printf("%i ", arr[i][j]);
+                  printf("%i ", arr[j][i]);
                 }
-        }
-    }
+    
+            }
+         
+     }
+    
+    
+    
 }
 
 /* Declare  arrays on the cpu */
@@ -162,8 +169,7 @@ void main_sub0(int numBlocks,int blockSize)
 	printf("Array0:\n");
 	print_array(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
 	printf("Array1:\n");
-	print_array(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
-	
+	print_array(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);	
      
     /* layout specification
      1. assume that blockSize is at least 64 and will be multiple of 32
@@ -176,15 +182,15 @@ void main_sub0(int numBlocks,int blockSize)
     int * gpu_array0, * gpu_array1,*gpu_arrayresult;
     
     int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
-    
+    //printf("size_in_bytes:%i\n",size_in_bytes);
     // memory allocation on GPU
     cudaMalloc((void **)&gpu_array0, size_in_bytes);
 	cudaMalloc((void **)&gpu_array1, size_in_bytes);
     cudaMalloc((void **)&gpu_arrayresult, size_in_bytes);
     
     // memory copy from cpu to gpu
-    cudaMemcpy( gpu_array0,cpu_array0 , size_in_bytes, cudaMemcpyHostToDevice );
-    cudaMemcpy( gpu_array1,cpu_array1 , size_in_bytes, cudaMemcpyHostToDevice );
+    cudaMemcpy( gpu_array0,*cpu_array0 , size_in_bytes, cudaMemcpyHostToDevice );
+    cudaMemcpy( gpu_array1,*cpu_array1 , size_in_bytes, cudaMemcpyHostToDevice );
   
     for(int kernel=0; kernel<4; kernel++)
     {
@@ -196,7 +202,7 @@ void main_sub0(int numBlocks,int blockSize)
     
                     auto stop = std::chrono::high_resolution_clock::now();
                                 
-                    cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+                    cudaMemcpy(*cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
                     
                      printf("Kernel 0 (Add) is called! \n");
                      printf("Array Result:\n");
@@ -212,7 +218,7 @@ void main_sub0(int numBlocks,int blockSize)
                     arraySubtract<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to subtract two 2-D arrays 
                     auto stop = std::chrono::high_resolution_clock::now();
     
-                     cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+                     cudaMemcpy(*cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
                      
                         printf("Kernel 1 (subtract) is called! \n");
                          printf("Array Result:\n");
@@ -228,7 +234,7 @@ void main_sub0(int numBlocks,int blockSize)
                      arrayMult<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise)multiply two 2-D arrays 
                     auto stop = std::chrono::high_resolution_clock::now();
     
-                     cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+                     cudaMemcpy(*cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
     
     
                      printf("Kernel 2 (multiplication) is called! \n");
@@ -242,7 +248,7 @@ void main_sub0(int numBlocks,int blockSize)
                     auto start = std::chrono::high_resolution_clock::now(); 
                      arrayMod<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise) mod divide two 2-D arrays 
                     auto stop = std::chrono::high_resolution_clock::now();
-                     cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+                     cudaMemcpy(*cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
                      printf("Kernel 3 (mod) is called! \n");
                      printf("Array Result:\n");
                      print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);  
