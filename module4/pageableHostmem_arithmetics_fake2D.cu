@@ -200,12 +200,13 @@ void main_sub0(int numBlocks,int blockSize)
 	
 	/* dynamically allocate the memory on the host*/
 	int *cpu_array0,*cpu_array1,*cpu_array_res; 
-	//pagable
+    
+    auto start1 = std::chrono::high_resolution_clock::now();
 	cpu_array0 = (int *) malloc(size_in_bytes);//pagable
 	cpu_array1 = (int *)malloc(size_in_bytes);
 	cpu_array_res = (int *)malloc(size_in_bytes);
-	
-	
+	 auto stop1 = std::chrono::high_resolution_clock::now();
+	 std::cout << "Time taken by memory allocation on host: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop1-start1).count() << "ns\n";
     /* data init*/
     cpu_array0_int(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
 	cpu_array1_int(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
@@ -236,13 +237,19 @@ void main_sub0(int numBlocks,int blockSize)
     
 
     // memory allocation on GPU
+     auto start2 = std::chrono::high_resolution_clock::now();
     cudaMalloc((void **)&gpu_array0, size_in_bytes);
 	cudaMalloc((void **)&gpu_array1, size_in_bytes);
     cudaMalloc((void **)&gpu_arrayresult, size_in_bytes);
-    
+    auto stop2 = std::chrono::high_resolution_clock::now();
+     std::cout << "Time taken by memory allocation on GPU: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop2-start2).count() << "ns\n";
+     
     // memory copy from cpu to gpu
+     auto start3 = std::chrono::high_resolution_clock::now();
     cudaMemcpy( gpu_array0,cpu_array0 , size_in_bytes, cudaMemcpyHostToDevice );
     cudaMemcpy( gpu_array1,cpu_array1 , size_in_bytes, cudaMemcpyHostToDevice );
+     auto stop3 = std::chrono::high_resolution_clock::now();
+      std::cout << "Time taken by memory copy from cpu to gpu: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop3-start3).count() << "ns\n";
   
     for(int kernel=0; kernel<4; kernel++)
     {

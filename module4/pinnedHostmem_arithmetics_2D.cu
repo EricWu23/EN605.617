@@ -153,7 +153,7 @@ void main_sub0(int numBlocks,int blockSize)
 	int **cpu_array0,**cpu_array1,**cpu_array_res; 
 
 
-			
+	 auto start1 = std::chrono::high_resolution_clock::now(); 		
 	cudaMallocHost((void**)&cpu_array0,sizeof(int *) * cpu_arr_size_y);	
 	cudaMallocHost((void**)&(*cpu_array0),sizeof(int) * cpu_arr_size_x* cpu_arr_size_y);	
 	for(int i = 1; i < cpu_arr_size_y; i++){
@@ -167,13 +167,15 @@ void main_sub0(int numBlocks,int blockSize)
 	for(int i = 1; i < cpu_arr_size_y; i++){
 		cpu_array1[i] = cpu_array1[0] + i * cpu_arr_size_y;
 	}
+                                      
 	
 	cpu_array_res = (int **)malloc(sizeof(int *) * cpu_arr_size_y);
     cpu_array_res[0] = (int *)malloc(sizeof(int) * cpu_arr_size_x* cpu_arr_size_y);
 		for(int i = 1; i < cpu_arr_size_y; i++){
 		cpu_array_res[i] = cpu_array_res[0] + i * cpu_arr_size_y;
 	}
-	
+	   auto stop1 = std::chrono::high_resolution_clock::now();
+     std::cout << "Time taken by cudaMallocHost: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop1-start1).count() << "ns\n";
     /* data init*/
     cpu_array0_int(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
 	cpu_array1_int(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
@@ -193,14 +195,19 @@ void main_sub0(int numBlocks,int blockSize)
     
     /* Declare statically arrays */
     int * gpu_array0, * gpu_array1,*gpu_arrayresult;
-       
+    auto start2 = std::chrono::high_resolution_clock::now();   
     cudaMalloc((void **)&gpu_array0, size_in_bytes);// memory allocation on GPU
 	cudaMalloc((void **)&gpu_array1, size_in_bytes);
     cudaMalloc((void **)&gpu_arrayresult, size_in_bytes);
+    auto stop2 = std::chrono::high_resolution_clock::now();
+     std::cout << "Time taken by cudaMalloc: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop2-start2).count() << "ns\n";
     
+    auto start3 = std::chrono::high_resolution_clock::now();
     // memory copy from cpu to gpu
     cudaMemcpy( gpu_array0,*cpu_array0 , size_in_bytes, cudaMemcpyHostToDevice );
     cudaMemcpy( gpu_array1,*cpu_array1 , size_in_bytes, cudaMemcpyHostToDevice );
+     auto stop3 = std::chrono::high_resolution_clock::now();
+     std::cout << "Time taken by cudaMemcpyHostToDevice: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop3-start3).count() << "ns\n";
   
     for(int kernel=0; kernel<4; kernel++)
     {

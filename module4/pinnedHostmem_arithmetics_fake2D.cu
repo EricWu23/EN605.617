@@ -198,12 +198,12 @@ void main_sub0(int numBlocks,int blockSize)
     
 	/* dynamically allocate the memory on the host*/
 	int *cpu_array0,*cpu_array1,*cpu_array_res; 
-    
+     auto start1 = std::chrono::high_resolution_clock::now();
 	cudaMallocHost(&cpu_array0,size_in_bytes);//pinned 
 	cudaMallocHost(&cpu_array1,size_in_bytes);
 	cudaMallocHost(&cpu_array_res,size_in_bytes);
-	
-	
+	auto stop1 = std::chrono::high_resolution_clock::now();
+	 std::cout << "Time taken by host memory allocation: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop1-start1).count() << "ns\n";
     /* data init*/
     cpu_array0_int(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
 	cpu_array1_int(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
@@ -231,15 +231,18 @@ void main_sub0(int numBlocks,int blockSize)
     
     /* Declare statically arrays */
     int * gpu_array0, * gpu_array1,*gpu_arrayresult;
-    
+     auto start2 = std::chrono::high_resolution_clock::now();
     cudaMalloc((void **)&gpu_array0, size_in_bytes);// memory allocation on GPU
 	cudaMalloc((void **)&gpu_array1, size_in_bytes);
     cudaMalloc((void **)&gpu_arrayresult, size_in_bytes);
-    
+      auto stop2 = std::chrono::high_resolution_clock::now();
+      std::cout << "Time taken by device memory allocation: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop2-start2).count() << "ns\n";
     // memory copy from cpu to gpu
+    auto start3 = std::chrono::high_resolution_clock::now();
     cudaMemcpy( gpu_array0,cpu_array0 , size_in_bytes, cudaMemcpyHostToDevice );
     cudaMemcpy( gpu_array1,cpu_array1 , size_in_bytes, cudaMemcpyHostToDevice );
-  
+     auto stop3 = std::chrono::high_resolution_clock::now();
+   std::cout << "Time taken by memory copy from cpu to gpu: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop3-start3).count() << "ns\n";
     for(int kernel=0; kernel<4; kernel++)
     {
       switch(kernel)
