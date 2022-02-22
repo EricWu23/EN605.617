@@ -5,6 +5,7 @@
 #include <iostream>
     
 #define WARP 32
+#define OFFSET 10
 
 __global__ void arrayAdd(int *array0,int *array1,int* arraysum) {
 
@@ -66,7 +67,7 @@ __global__ void arrayMod(int *array0,int *array1,int* arraymod) {
 // function to print out a 2D array for debugging
 void print_array(int* arr, int num_row, int num_col)
 {
-    
+      printf("--------------------------------------------\n");
           for(int i=0; i<num_col; i++)
       {
             for(int j=0; j<num_row; j++)
@@ -85,7 +86,7 @@ void print_array(int* arr, int num_row, int num_col)
             }
          
      }
-          
+      printf("--------------------------------------------\n");      
 }
 
 
@@ -141,28 +142,71 @@ void  cpu_array1_int(int* arr,int num_row,int num_column){
 		
 }
 
+/* simple Caesar cypher*/
+void encrypt(int* arr,int total_element){
+                                       
+     for(int i=0;i<total_element;i++)
+    {
+    
+        arr[i]=arr[i]+OFFSET;
+    
+    }
+                                                                                                           
+}
+
+/* simple Caesar cypher*/
+void decrypt(int* arr,int total_element){
+                                       
+     for(int i=0;i<total_element;i++)
+    {
+    
+        arr[i]=arr[i]-OFFSET;
+    
+    }
+                                                                                                           
+}
+
+bool validtest( int* const uut,int total_element,size_t bytes){
+                                     
+     int* dest;
+                                      
+     dest=(int *) malloc(bytes);                                 
+     memcpy(dest,uut,bytes); //deep copy to create the ground truth
+                                 
+     encrypt(uut,total_element);
+     decrypt(uut,total_element);
+     for(int i=0;i<total_element;i++){
+             if(uut[i]!=dest[i])
+            {
+                free(dest);
+                return false;
+            }   
+    }        
+    
+    free(dest);
+    return true;                                  
+}                                      
+                                       
 void main_sub0(int numBlocks,int blockSize)
 {
 	int totalThreads=numBlocks*blockSize;
 	int cpu_arr_size_y=1;//row
 	int cpu_arr_size_x=totalThreads;//column
     int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
+    int size_in_elements = cpu_arr_size_x* cpu_arr_size_y;
 	
 	/* dynamically allocate the memory on the host*/
 	int *cpu_array0,*cpu_array1,*cpu_array_res; 
 	//pagable
-	cpu_array0 = (int *) malloc((cpu_arr_size_y * cpu_arr_size_x) * sizeof(int));
-	cpu_array1 = (int *)malloc((cpu_arr_size_y * cpu_arr_size_x) * sizeof(int));
-	cpu_array_res = (int *)malloc((cpu_arr_size_y * cpu_arr_size_x) * sizeof(int));
+	cpu_array0 = (int *) malloc(size_in_bytes);//pagable
+	cpu_array1 = (int *)malloc(size_in_bytes);
+	cpu_array_res = (int *)malloc(size_in_bytes);
 	
-	printf("I am here 1! \n");
 	
     /* data init*/
     cpu_array0_int(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
-	//printf("I am here 3! \n");
 	cpu_array1_int(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
 	
-		printf("I am here 2! \n");
 	/* print out the arrays for debuging */
 	printf("The following two arrays are initialized on cpu! \n");
 	printf("Array0:\n");
@@ -170,9 +214,12 @@ void main_sub0(int numBlocks,int blockSize)
 	printf("Array1:\n");
 	print_array(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);	
      
+    /* test the Caesar cypher*/
+    printf("%s\n", validtest(cpu_array0,size_in_elements,size_in_bytes)? "Caesar cypher works!" : "Caesar cypher not working!");
+    
     /* layout specification
-     1. assume that blockSize is at least 64 and will be multiple of 32
-     2. numberBlocks will be at least 1
+         1. assume that blockSize is at least 64 and will be multiple of 32
+         2. numberBlocks will be at least 1
     */
     const dim3 threads_layout(WARP,blockSize/WARP); // there are multiple ways of layout to achieve blocksize. I choose to fix the  blockDim.x as the WARP size
     const dim3 blocks_layout(1,numBlocks);// there are multiple ways of layout to achieve numBlocks, I choose to fix the gridDim.x to 1
@@ -181,7 +228,6 @@ void main_sub0(int numBlocks,int blockSize)
     int * gpu_array0, * gpu_array1,*gpu_arrayresult;
     
 
-    //printf("size_in_bytes:%i\n",size_in_bytes);
     // memory allocation on GPU
     cudaMalloc((void **)&gpu_array0, size_in_bytes);
 	cudaMalloc((void **)&gpu_array1, size_in_bytes);

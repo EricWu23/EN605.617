@@ -32,3 +32,7 @@
 *.app
 
 \.DS_Store
+module4/host_memory
+module4/pinnedHostmem_arithmetics
+module4/pinnedHostmem_arithmetics_2D
+module4/pinnedHostmem_arithmetics_fake2D
