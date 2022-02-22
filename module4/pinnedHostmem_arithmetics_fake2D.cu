@@ -6,6 +6,9 @@
     
 #define WARP 32
 #define OFFSET 10
+#ifndef VERBOSE 
+	#define VERBOSE 1
+#endif
 
 __global__ void arrayAdd(int *array0,int *array1,int* arraysum) {
 
@@ -206,14 +209,17 @@ void main_sub0(int numBlocks,int blockSize)
 	cpu_array1_int(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
 	
 	/* print out the arrays for debuging */
-	printf("The following two arrays are initialized on cpu! \n");
-	printf("Array0:\n");
-	print_array(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
-	printf("Array1:\n");
-	print_array(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
+	if(VERBOSE)
+	{
+		printf("The following two arrays are initialized on cpu! \n");
+		printf("Array0:\n");
+		print_array(cpu_array0,cpu_arr_size_y,cpu_arr_size_x);
+		printf("Array1:\n");
+		print_array(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
+	}
     
       /* test the Caesar cypher*/
-    printf("%s\n", validtest(cpu_array0,size_in_elements,size_in_bytes)? "Caesar cypher works!" : "Caesar cypher not working!");
+    if(VERBOSE){ printf("%s\n", validtest(cpu_array0,size_in_elements,size_in_bytes)? "Caesar cypher works!" : "Caesar cypher not working!");}
     
      
     /* layout specification
@@ -247,8 +253,10 @@ void main_sub0(int numBlocks,int blockSize)
                     cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
                     
                      printf("Kernel 0 (Add) is called! \n");
-                     printf("Array Result:\n");
-                     print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);
+					 if(VERBOSE){
+						 printf("Array Result:\n");
+						 print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);
+					 }
                      std::cout << "Time taken by GPU: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start).count() << "ns\n";
                      printf("--------------------------------------------\n");
                     } break;
@@ -263,8 +271,10 @@ void main_sub0(int numBlocks,int blockSize)
                      cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
                      
                         printf("Kernel 1 (subtract) is called! \n");
-                         printf("Array Result:\n");
-                         print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);
+						if(VERBOSE){
+							printf("Array Result:\n");
+							print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);
+						}
                         std::cout << "Time taken by GPU: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start).count() << "ns\n";  
                          printf("--------------------------------------------\n");
                    }break;                    
@@ -280,8 +290,10 @@ void main_sub0(int numBlocks,int blockSize)
     
     
                      printf("Kernel 2 (multiplication) is called! \n");
-                     printf("Array Result:\n");
-                     print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x); 
+					 if(VERBOSE){
+						printf("Array Result:\n");
+						print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x); 
+					 }
                     std::cout << "Time taken by GPU: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start).count() << "ns\n";
                      printf("--------------------------------------------\n");
                    }break;                    
@@ -292,8 +304,10 @@ void main_sub0(int numBlocks,int blockSize)
                     auto stop = std::chrono::high_resolution_clock::now();
                      cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
                      printf("Kernel 3 (mod) is called! \n");
-                     printf("Array Result:\n");
-                     print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);  
+					 if(VERBOSE){
+						printf("Array Result:\n");
+						print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);  
+					 }
                      std::cout << "Time taken by GPU: " << std::chrono::duration_cast<std::chrono::nanoseconds>(stop-start).count() << "ns\n";
                      printf("--------------------------------------------\n");
                    }break;                    
