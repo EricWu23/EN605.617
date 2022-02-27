@@ -98,12 +98,110 @@ __host__ void execute_gpu_arrayAdd(int numBlocks,int blockSize,int *const gpu_ar
 		printf("Array Result:\n");
 		print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);					 
 	}
-	printf("\n GPU execution with global mem takes: %.3fms",delta_time1);
+	printf("GPU execution with global mem takes: %.3fms",delta_time1);
 	printf("--------------------------------------------\n");
 	
 	cudaEventDestroy(kernel_start1);
 	cudaEventDestroy(kernel_stop1);
 }
+
+__host__ void execute_gpu_arraySubtract(int numBlocks,int blockSize,int *const gpu_array0,int * const gpu_array1,int* const gpu_arrayresult,int* const cpu_array_res)
+{
+	int totalThreads=numBlocks*blockSize;
+	int cpu_arr_size_y=1;//row
+	int cpu_arr_size_x=totalThreads;//column
+	int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
+	/* layout specification*/
+	const dim3 threads_layout(WARP,blockSize/WARP); // there are multiple ways of layout to achieve blocksize. I choose to fix the  blockDim.x as the WARP size
+    const dim3 blocks_layout(1,numBlocks);// there are multiple ways of layout to achieve numBlocks, I choose to fix the gridDim.x to 1
+	cudaEvent_t kernel_start1, kernel_stop1;
+	float delta_time1 = 0.0f;
+	cudaEventCreate(&kernel_start1);
+	cudaEventCreateWithFlags(&kernel_stop1,cudaEventBlockingSync);
+	
+	cudaEventRecord(kernel_start1, 0);//0 is the default stream
+	arraySubtract<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to subtract two 2-D arrays 
+	cudaEventRecord(kernel_stop1, 0);
+	cudaEventSynchronize(kernel_stop1);
+	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
+	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+	printf("Kernel 1 (subtract) is called! \n");
+	if(VERBOSE){
+		printf("Array Result:\n");
+		print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);					 
+	 }
+	printf("GPU execution with global mem takes: %.3fms",delta_time1);
+	printf("--------------------------------------------\n");
+	
+	cudaEventDestroy(kernel_start1);
+	cudaEventDestroy(kernel_stop1);
+}
+
+
+__host__ void execute_gpu_arrayMult(int numBlocks,int blockSize,int *const gpu_array0,int * const gpu_array1,int* const gpu_arrayresult,int* const cpu_array_res)
+{
+    int totalThreads=numBlocks*blockSize;
+	int cpu_arr_size_y=1;//row
+	int cpu_arr_size_x=totalThreads;//column
+	int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
+	/* layout specification*/
+	const dim3 threads_layout(WARP,blockSize/WARP); // there are multiple ways of layout to achieve blocksize. I choose to fix the  blockDim.x as the WARP size
+    const dim3 blocks_layout(1,numBlocks);// there are multiple ways of layout to achieve numBlocks, I choose to fix the gridDim.x to 1
+	cudaEvent_t kernel_start1, kernel_stop1;
+	float delta_time1 = 0.0f;
+	cudaEventCreate(&kernel_start1);
+	cudaEventCreateWithFlags(&kernel_stop1,cudaEventBlockingSync);
+	
+	cudaEventRecord(kernel_start1, 0);//0 is the default stream
+	arrayMult<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise)multiply two 2-D arrays 
+	cudaEventRecord(kernel_stop1, 0);//0 is the default stream
+	cudaEventSynchronize(kernel_stop1);
+	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
+	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
+	printf("Kernel 2 (multiplication) is called! \n");
+	if(VERBOSE){
+		 printf("Array Result:\n");
+		 print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x); 
+	}
+	printf("GPU execution with global mem takes: %.3fms",delta_time1);
+	printf("--------------------------------------------\n");
+	
+	cudaEventDestroy(kernel_start1);
+	cudaEventDestroy(kernel_stop1);	
+}
+
+__host__ void execute_gpu_arrayMod(int numBlocks,int blockSize,int *const gpu_array0,int * const gpu_array1,int* const gpu_arrayresult,int* const cpu_array_res)
+{
+    int totalThreads=numBlocks*blockSize;
+	int cpu_arr_size_y=1;//row
+	int cpu_arr_size_x=totalThreads;//column
+	int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
+	/* layout specification*/
+	const dim3 threads_layout(WARP,blockSize/WARP); // there are multiple ways of layout to achieve blocksize. I choose to fix the  blockDim.x as the WARP size
+    const dim3 blocks_layout(1,numBlocks);// there are multiple ways of layout to achieve numBlocks, I choose to fix the gridDim.x to 1
+	cudaEvent_t kernel_start1, kernel_stop1;
+	float delta_time1 = 0.0f;
+	cudaEventCreate(&kernel_start1);
+	cudaEventCreateWithFlags(&kernel_stop1,cudaEventBlockingSync);
+	
+	cudaEventRecord(kernel_start1, 0);//0 is the default stream
+	arrayMod<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise) mod divide two 2-D arrays
+	cudaEventRecord(kernel_stop1, 0);//0 is the default stream
+	cudaEventSynchronize(kernel_stop1);
+	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);						
+	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu 
+	printf("Kernel 3 (mod) is called! \n");
+	if(VERBOSE){
+		printf("Array Result:\n");
+		print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);  
+	}
+	printf("GPU execution with global mem takes: %.3fms",delta_time1);
+	printf("--------------------------------------------\n");
+	
+	cudaEventDestroy(kernel_start1);
+	cudaEventDestroy(kernel_stop1);	
+}
+
 // function to print out a 2D array for debugging
 void print_array(int* arr, int num_row, int num_col)
 {
@@ -167,9 +265,6 @@ void execute_gpu_global_test(int numBlocks, int blockSize){
 		printf("Array1:\n");
 		print_array(cpu_array1,cpu_arr_size_y,cpu_arr_size_x);
 	}
-	/* layout specification*/
-	const dim3 threads_layout(WARP,blockSize/WARP); // there are multiple ways of layout to achieve blocksize. I choose to fix the  blockDim.x as the WARP size
-    const dim3 blocks_layout(1,numBlocks);// there are multiple ways of layout to achieve numBlocks, I choose to fix the gridDim.x to 1
 	
 	 /* Device memory allocation */
     int * gpu_array0, * gpu_array1,*gpu_arrayresult;
@@ -179,20 +274,6 @@ void execute_gpu_global_test(int numBlocks, int blockSize){
 	/* explicit memory copy from cpu to device*/
 	cudaMemcpy( gpu_array0,cpu_array0 , size_in_bytes, cudaMemcpyHostToDevice );
     cudaMemcpy( gpu_array1,cpu_array1 , size_in_bytes, cudaMemcpyHostToDevice );
-	//create events for timing the kernel executions.
-	//cudaEvent_t kernel_start1, kernel_stop1,kernel_start2, kernel_stop2,kernel_start3, kernel_stop3,kernel_start4, kernel_stop4;
-	cudaEvent_t kernel_start2, kernel_stop2,kernel_start3, kernel_stop3,kernel_start4, kernel_stop4;
-	//float delta_time1 = 0.0f, delta_time2 = 0.0F,delta_time3 = 0.0F,delta_time4 = 0.0F;
-	float delta_time2 = 0.0F,delta_time3 = 0.0F,delta_time4 = 0.0F;
-	//cudaEventCreate(&kernel_start1);
-	cudaEventCreate(&kernel_start2);
-	cudaEventCreate(&kernel_start3);
-	cudaEventCreate(&kernel_start4);
-	//cudaEventCreateWithFlags(&kernel_stop1,cudaEventBlockingSync);
-	cudaEventCreateWithFlags(&kernel_stop2,cudaEventBlockingSync);
-	cudaEventCreateWithFlags(&kernel_stop3,cudaEventBlockingSync);
-	cudaEventCreateWithFlags(&kernel_stop4,cudaEventBlockingSync);
-	
 	
 	/* Execute 4 simple math operation*/ 
 	for(int kernel=0; kernel<4; kernel++)
@@ -203,75 +284,26 @@ void execute_gpu_global_test(int numBlocks, int blockSize){
 					  execute_gpu_arrayAdd(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,cpu_array_res);
                     } break;                                                                                     
             case 1:{
-						cudaEventRecord(kernel_start2, 0);//0 is the default stream
-						arraySubtract<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to subtract two 2-D arrays 
-						cudaEventRecord(kernel_stop2, 0);
-						cudaEventSynchronize(kernel_stop2);
-						cudaEventElapsedTime(&delta_time2, kernel_start2,kernel_stop2);
-						cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
-						printf("Kernel 1 (subtract) is called! \n");
-						if(VERBOSE){
-							printf("Array Result:\n");
-							print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);					 
-						 }
-						printf("\n GPU execution with global mem takes: %.3fms",delta_time2);
-                        printf("--------------------------------------------\n");
+					  execute_gpu_arraySubtract(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,cpu_array_res);
                    }break;                                     
            case 2:{
-						cudaEventRecord(kernel_start3, 0);//0 is the default stream
-						arrayMult<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise)multiply two 2-D arrays 
-						cudaEventRecord(kernel_stop3, 0);//0 is the default stream
-						cudaEventSynchronize(kernel_stop3);
-						cudaEventElapsedTime(&delta_time3, kernel_start3,kernel_stop3);
-						cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
-						printf("Kernel 2 (multiplication) is called! \n");
-						if(VERBOSE){
-							 printf("Array Result:\n");
-							 print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x); 
-						}
-						printf("\n GPU execution with global mem takes: %.3fms",delta_time3);
-						printf("--------------------------------------------\n");
+					  execute_gpu_arrayMult(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,cpu_array_res);
                    }break;                                                                 
            case 3:{      
-						cudaEventRecord(kernel_start4, 0);//0 is the default stream
-						arrayMod<<<blocks_layout,threads_layout>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise) mod divide two 2-D arrays
-						cudaEventRecord(kernel_stop4, 0);//0 is the default stream
-						cudaEventSynchronize(kernel_stop4);
-						cudaEventElapsedTime(&delta_time4, kernel_start4,kernel_stop4);						
-						cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu 
-						printf("Kernel 3 (mod) is called! \n");
-						if(VERBOSE){
-							printf("Array Result:\n");
-							print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);  
-						}
-						printf("\n GPU execution with global mem takes: %.3fms",delta_time4);
-						printf("--------------------------------------------\n");
+					  execute_gpu_arrayMod(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,cpu_array_res);
                    }break;                                                                   
             default: exit(1); break;                                                                                                         
       }	
 	}	
-	
-	/*Destroy the event created */
-	//cudaEventDestroy(kernel_start1);
-	cudaEventDestroy(kernel_start2);
-	cudaEventDestroy(kernel_start3);
-	cudaEventDestroy(kernel_start4);
-	//cudaEventDestroy(kernel_stop1);
-	cudaEventDestroy(kernel_stop2);
-	cudaEventDestroy(kernel_stop3);
-	cudaEventDestroy(kernel_stop4);
-	
+		
 	/*Free the arrays on the CPU*/
 	free(cpu_array0);
 	free(cpu_array1);
 	free(cpu_array_res);
-	
-
     /* Free the arrays on the GPU as now we're done with them */
     cudaFree(gpu_array0);
 	cudaFree(gpu_array1);
-    cudaFree(gpu_arrayresult);
-	
+    cudaFree(gpu_arrayresult);	
 	//Destroy all allocations and reset all state on the current device in the current process
 	cudaDeviceReset();
 }
