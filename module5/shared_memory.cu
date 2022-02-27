@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h>//rand
 
 typedef unsigned short int u16;
 typedef unsigned int u32;
@@ -194,7 +194,7 @@ __device__ void copy_data_to_shared(const u32 * const data,
 	{
 		sort_tmp[i+tid] = data[i+tid];
 	}
-	__syncthreads();
+	__syncthreads();// synchronize all the threads within a block
 }
 
 
@@ -256,10 +256,10 @@ __global__ void gpu_sort_array_array(u32 * const data,
 
 	copy_data_to_shared(data, sort_tmp, num_lists,
 				num_elements, tid);
-
+    //radix_sort(sort_tmp, num_lists, num_elements, tid, sort_tmp_0, sort_tmp_1);
 	radix_sort2(sort_tmp, num_lists, num_elements, tid, sort_tmp_0, sort_tmp_1);
 
-	merge_array1(sort_tmp, data, num_lists, num_elements, tid);
+	merge_array1(sort_tmp, data, num_lists, num_elements, tid);//sort_tmp--> data
 }
 
 // Uses multiple threads for merge
@@ -496,7 +496,20 @@ __device__ void merge_array9(const u32 * const src_array,
 
 void execute_host_functions()
 {
-
+	unsigned int idata[NUM_ELEMENTS], odata[NUM_ELEMENTS];
+	int i;
+	// This can be modifed to initialize idata with something you like
+	for (i = 0; i < NUM_ELEMENTS; i++){
+		//idata[i] = (unsigned int) i;
+		//idata[i] = (unsigned int)rand() % 2048;
+		idata[i] = (unsigned int) NUM_ELEMENTS-i;
+		odata[i] = idata[i];
+	}
+	 
+	cpu_sort(odata,NUM_ELEMENTS);
+		for (i = 0; i < NUM_ELEMENTS; i++) {
+		printf("Input value: %u, output: %u\n", idata[i], odata[i]);
+	}
 }
 
 void execute_gpu_functions()
@@ -504,27 +517,33 @@ void execute_gpu_functions()
 	u32 *d = NULL;
 	unsigned int idata[NUM_ELEMENTS], odata[NUM_ELEMENTS];
 	int i;
-	for (i = 0; i < NUM_ELEMENTS; i++){
-		idata[i] = (unsigned int) i;
-	}
-
-	cudaMalloc((void** ) &d, sizeof(int) * NUM_ELEMENTS);
 	
-	cudaMemcpy(d, idata, sizeof(unsigned int) * NUM_ELEMENTS, cudaMemcpyHostToDevice);
+	// This can be modifed to initialize idata with something you like
+	for (i = 0; i < NUM_ELEMENTS; i++){
+		//idata[i] = (unsigned int) i;
+		idata[i] = (unsigned int)rand() % 2048;
+	}
+	// allocate global mem on device
+	cudaMalloc((void** ) &d, sizeof(int) * NUM_ELEMENTS);
+	// explicit memcopy: copy data from host to device
+	cudaMemcpy(d, idata, sizeof(unsigned int) * NUM_ELEMENTS, cudaMemcpyHostToDevice);// idata--->d
 
 	//Call GPU kernels
 	gpu_sort_array_array<<<1, NUM_ELEMENTS>>>(d,MAX_NUM_LISTS,NUM_ELEMENTS);
 
-	cudaThreadSynchronize();	// Wait for the GPU launched work to complete
+	//cudaThreadSynchronize();	// Wait for the GPU launched work to complete
+	 cudaDeviceSynchronize();
 	cudaGetLastError();
-	
-	cudaMemcpy(odata, d, sizeof(int) * NUM_ELEMENTS, cudaMemcpyDeviceToHost);
+	// explicit memcopy: copy data from device to host
+	cudaMemcpy(odata, d, sizeof(int) * NUM_ELEMENTS, cudaMemcpyDeviceToHost);//d--> odata
 
 	for (i = 0; i < NUM_ELEMENTS; i++) {
 		printf("Input value: %u, device output: %u\n", idata[i], odata[i]);
 	}
-	
+	//Free mem allocated on the device
 	cudaFree((void* ) d);
+
+	//Destroy all allocations and reset all state on the current device in the current process
 	cudaDeviceReset();
 
 }
@@ -533,7 +552,7 @@ void execute_gpu_functions()
  * Host function that prepares data array and passes it to the CUDA kernel.
  */
 int main(void) {
-	execute_host_functions();
+	//execute_host_functions();
 	execute_gpu_functions();
 
 	return 0;
