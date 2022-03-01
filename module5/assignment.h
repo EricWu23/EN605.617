@@ -7,7 +7,10 @@ __device__ void copy_data_to_shared(const int * const data,
 									int * const shared_tmp,
 									const int num_elements,
 									const int tid);
-									
+__device__ void copy_data_from_shared(int * const data,
+									 int * const shared_tmp,
+									const int globalid,
+									const int tid);							
 __global__ void arrayAdd(int *array0,int *array1,int* arrayres);
 
 __global__ void gpu_arrayAdd_shared(int *array0,int *array1,int* arrayres,int num_elements,int totalnumofThreads);

@@ -6,10 +6,8 @@
     
 #define WARP 32
 #define OFFSET 10
-#define MAXARRAYSIZE 8192// this needs to be specify as multiple of blocksize
-#ifndef MAXOPERIONS // this specifies how many operations to run inside a kernel
-	#define MAXOPERIONS 100
-#endif
+#define MAXARRAYSIZE 8000
+#define MAXSHAREDMEMSIZE 48000
 #ifndef VERBOSE 
 	#define VERBOSE 1
 #endif
@@ -25,14 +23,10 @@ __global__ void arrayAdd(int *array0,int *array1,int* arrayres) {
     const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
     
     if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-	    for(int i=0;i<MAXOPERIONS;i++)
-		{
-			arrayres[global_idx]=array0[global_idx]+array1[global_idx];
-		}
+        arrayres[global_idx]=array0[global_idx]+array1[global_idx];
     }
 }
-
-__global__ void gpu_arrayAdd_shared(int *array0,int *array1,int* arrayres) {
+__global__ void gpu_arrayAdd_shared(int *array0,int *array1,int* arrayres,int num_elements,int totalnumofThreads) {
 
     // collapse the higher dimension layout or nested layout down to flat 2D
     const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
@@ -43,63 +37,21 @@ __global__ void gpu_arrayAdd_shared(int *array0,int *array1,int* arrayres) {
     
 	 extern __shared__ int shared_tmp[];// total dynamically  allocated shared mem // 49KB limit
 	 int *arry0shared=shared_tmp;
-	 int *arry1shared=(int*)&shared_tmp[blockDim.x];
-	 int *arry2shared=(int*)&shared_tmp[blockDim.x*2];
+	 int *arry1shared=(int*)&shared_tmp[num_elements];
 	 
-	 copy_data_to_shared(array0,arry0shared,global_idx,threadIdx.x);//array0-->arry0shared
-	 copy_data_to_shared(array1,arry1shared,global_idx,threadIdx.x);//array1-->arry1shared
-	 
-	if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-		for(int i=0;i<MAXOPERIONS;i++)
-		{
-			arry2shared[threadIdx.x]=arry0shared[threadIdx.x]+arry1shared[threadIdx.x];
-		}
-    }
+	 for(int offset=0;offset<totalnumofThreads;offset+=num_elements){
+		 if((global_idx>=offset) && (global_idx<offset+num_elements))
+		 {
+			copy_data_to_shared(array0,arry0shared,num_elements,global_idx);//array0-->arry0shared
+			copy_data_to_shared(array1,arry1shared,num_elements,global_idx);//array1-->arry1shared
+			if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
+				arrayres[global_idx]=arry0shared[global_idx-offset]+arry1shared[global_idx-offset];
+		    }
+		 }		 
+	 }
 	
-	copy_data_from_shared(arrayres,arry2shared,global_idx,threadIdx.x);// arry2shared-->arrayres
 }
 
-/*
-__global__ void gpu_arrayAdd_shared(int *array0,int *array1,int* arrayres) {
-
-    // collapse the higher dimension layout or nested layout down to flat 2D
-    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-	const int idy = (blockIdx.y * blockDim.y) + threadIdx.y;
-	
-    // collapse flat 2D down to 1D, whose index is global thread index
-    const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
-    
-	 extern __shared__ int shared_tmp[];// total dynamically  allocated shared mem // 49KB limit
-	 int *arry0shared=shared_tmp;
-	 int *arry1shared=(int*)&shared_tmp[blockDim.x];
-	 
-	 copy_data_to_shared(array0,arry0shared,global_idx,threadIdx.x);//array0-->arry0shared
-	 copy_data_to_shared(array1,arry1shared,global_idx,threadIdx.x);//array1-->arry1shared
-	 
-	if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-	    for(int i=0;i<MAXOPERIONS;i++)
-		{
-			arrayres[global_idx]=arry0shared[threadIdx.x]+arry1shared[threadIdx.x];
-		}
-    }
-
-}
-*/
-__global__ void gpu_arrayAdd_const(int* arrayres,int offset) {
-
-    // collapse the higher dimension layout or nested layout down to flat 2D
-    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-	const int idy = (blockIdx.y * blockDim.y) + threadIdx.y;
-	
-    // collapse flat 2D down to 1D, whose index is global thread index
-    const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
-    
-	if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-	   for(int i=0;i<MAXOPERIONS;i++){
-		 arrayres[offset+global_idx]=constarray0[global_idx]+constarray1[global_idx];	
-	   }
-	}	
-}
 
 __global__ void arraySubtract(int *array0,int *array1,int* arrayres) {
 
@@ -109,16 +61,12 @@ __global__ void arraySubtract(int *array0,int *array1,int* arrayres) {
 	
     // collapse flat 2D down to 1D, whose index is global thread index
     const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
-
-	if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-		for(int i=0;i<MAXOPERIONS;i++)
-		{
-			arrayres[global_idx]=array0[global_idx]-array1[global_idx];
-		}
-	}
-		
+    
+    if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
+        arrayres[global_idx]=array0[global_idx]-array1[global_idx];
+    }
 }
-__global__ void gpu_arraySubtract_shared(int *array0,int *array1,int* arrayres) {
+__global__ void gpu_arraySubtract_shared(int *array0,int *array1,int* arrayres,int num_elements,int totalnumofThreads) {
 
     // collapse the higher dimension layout or nested layout down to flat 2D
     const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
@@ -127,20 +75,24 @@ __global__ void gpu_arraySubtract_shared(int *array0,int *array1,int* arrayres) 
     // collapse flat 2D down to 1D, whose index is global thread index
     const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
     
-	 extern __shared__ int shared_tmp[];// total dynamically  allocated shared mem // 49KB limit
+	 extern __shared__ int shared_tmp[];// total dynamically  allocated shared mem
 	 int *arry0shared=shared_tmp;
-	 int *arry1shared=(int*)&shared_tmp[blockDim.x];
+	 int *arry1shared=(int*)&shared_tmp[num_elements];
 	 
-	 copy_data_to_shared(array0,arry0shared,global_idx,threadIdx.x);//array0-->arry0shared
-	 copy_data_to_shared(array1,arry1shared,global_idx,threadIdx.x);//array1-->arry1shared
+	 copy_data_to_shared(array0,arry0shared,num_elements,global_idx);
+	 copy_data_to_shared(array1,arry1shared,num_elements,global_idx);
 	 
-	if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-	    for(int i=0;i<MAXOPERIONS;i++)
-		{
-			arrayres[global_idx]=arry0shared[threadIdx.x]-arry1shared[threadIdx.x];
-		}
-    }
-
+	 for(int offset=0;offset<totalnumofThreads;offset+=num_elements){
+		 if((global_idx>=offset) && (global_idx<offset+num_elements))
+		 {
+			copy_data_to_shared(array0,arry0shared,num_elements,global_idx);//array0-->arry0shared
+			copy_data_to_shared(array1,arry1shared,num_elements,global_idx);//array1-->arry1shared
+			
+			if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
+				arrayres[global_idx]=arry0shared[global_idx-offset]-arry1shared[global_idx-offset];
+		    }
+		 }		 
+	 }
 }
 __global__ void gpu_arraySubtruct_const(int* arrayres,int offset) {
 
@@ -152,12 +104,34 @@ __global__ void gpu_arraySubtruct_const(int* arrayres,int offset) {
     const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
     
 	if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-	   for(int i=0;i<MAXOPERIONS;i++){
-		 arrayres[offset+global_idx]=constarray0[global_idx]-constarray1[global_idx];	
-	   }
+		
+		if((global_idx>=offset) && (global_idx<offset+MAXARRAYSIZE)){
+			arrayres[global_idx]=constarray0[global_idx-offset]-constarray1[global_idx-offset];	
+		}
+		else{
+			
+		}
 	}	
 }
+__global__ void gpu_arrayAdd_const(int* arrayres,int offset) {
 
+    // collapse the higher dimension layout or nested layout down to flat 2D
+    const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+	const int idy = (blockIdx.y * blockDim.y) + threadIdx.y;
+	
+    // collapse flat 2D down to 1D, whose index is global thread index
+    const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
+    
+	if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
+		
+		if((global_idx>=offset) && (global_idx<offset+MAXARRAYSIZE)){
+			arrayres[global_idx]=constarray0[global_idx-offset]+constarray1[global_idx-offset];	
+		}
+		else{
+			
+		}
+	}	
+}
 __global__ void arrayMult(int *array0,int *array1,int* arrayres) {
 
     // collapse the higher dimension layout or nested layout down to flat 2D
@@ -168,14 +142,11 @@ __global__ void arrayMult(int *array0,int *array1,int* arrayres) {
     const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
 
     if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-	    for(int i=0;i<MAXOPERIONS;i++)
-		{
-			arrayres[global_idx]=array0[global_idx]*array1[global_idx];
-		}
+    arrayres[global_idx]=array0[global_idx]*array1[global_idx];
     }
 }
 
-__global__ void gpu_arrayMult_shared(int *array0,int *array1,int* arrayres) {
+__global__ void gpu_arrayMult_shared(int *array0,int *array1,int* arrayres,int num_elements,int totalnumofThreads) {
 
     // collapse the higher dimension layout or nested layout down to flat 2D
     const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
@@ -183,21 +154,21 @@ __global__ void gpu_arrayMult_shared(int *array0,int *array1,int* arrayres) {
 	
     // collapse flat 2D down to 1D, whose index is global thread index
     const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
-     
-	 extern __shared__ int shared_tmp[];// total dynamically  allocated shared mem // 49KB limit
+    
+	 extern __shared__ int shared_tmp[];// total dynamically  allocated shared mem
 	 int *arry0shared=shared_tmp;
-	 int *arry1shared=(int*)&shared_tmp[blockDim.x];
+	 int *arry1shared=(int*)&shared_tmp[num_elements];
 	 
-	 copy_data_to_shared(array0,arry0shared,global_idx,threadIdx.x);//array0-->arry0shared
-	 copy_data_to_shared(array1,arry1shared,global_idx,threadIdx.x);//array1-->arry1shared
-	 
-	if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-	    for(int i=0;i<MAXOPERIONS;i++)
-		{
-			arrayres[global_idx]=arry0shared[threadIdx.x]*arry1shared[threadIdx.x];
-		}
-    }
-
+	 for(int offset=0;offset<totalnumofThreads;offset+=num_elements){
+		 if((global_idx>=offset) && (global_idx<offset+num_elements))
+		 {
+			copy_data_to_shared(array0,arry0shared,num_elements,global_idx);//array0-->arry0shared
+			copy_data_to_shared(array1,arry1shared,num_elements,global_idx);//array1-->arry1shared
+			if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
+				arrayres[global_idx]=arry0shared[global_idx-offset]*arry1shared[global_idx-offset];
+		    }
+		 }		 
+	 }
 }
 __global__ void gpu_arrayMult_const(int* arrayres,int offset) {
 
@@ -209,9 +180,13 @@ __global__ void gpu_arrayMult_const(int* arrayres,int offset) {
     const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
     
 	if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-	   for(int i=0;i<MAXOPERIONS;i++){
-		 arrayres[offset+global_idx]=constarray0[global_idx]*constarray1[global_idx];	
-	   }
+		
+		if((global_idx>=offset) && (global_idx<offset+MAXARRAYSIZE)){
+			arrayres[global_idx]=constarray0[global_idx-offset]*constarray1[global_idx-offset];	
+		}
+		else{
+			
+		}
 	}	
 }
 __global__ void arrayMod(int *array0,int *array1,int* arrayres) {
@@ -224,13 +199,10 @@ __global__ void arrayMod(int *array0,int *array1,int* arrayres) {
     const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
 
     if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-	    for(int i=0;i<MAXOPERIONS;i++)
-		{
-			arrayres[global_idx]=array0[global_idx]%array1[global_idx];
-		}
+    arrayres[global_idx]=array0[global_idx]%array1[global_idx];
     }
 }    
-__global__ void gpu_arrayMod_shared(int *array0,int *array1,int* arrayres) {
+__global__ void gpu_arrayMod_shared(int *array0,int *array1,int* arrayres,int num_elements,int totalnumofThreads) {
 
     // collapse the higher dimension layout or nested layout down to flat 2D
     const int idx = (blockIdx.x * blockDim.x) + threadIdx.x;
@@ -239,19 +211,20 @@ __global__ void gpu_arrayMod_shared(int *array0,int *array1,int* arrayres) {
     // collapse flat 2D down to 1D, whose index is global thread index
     const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
     
-	 extern __shared__ int shared_tmp[];// total dynamically  allocated shared mem // 49KB limit
+	 extern __shared__ int shared_tmp[];// total dynamically  allocated shared mem
 	 int *arry0shared=shared_tmp;
-	 int *arry1shared=(int*)&shared_tmp[blockDim.x];
+	 int *arry1shared=(int*)&shared_tmp[num_elements];
 	 
-	 copy_data_to_shared(array0,arry0shared,global_idx,threadIdx.x);//array0-->arry0shared
-	 copy_data_to_shared(array1,arry1shared,global_idx,threadIdx.x);//array1-->arry1shared
-	 
-	if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-	    for(int i=0;i<MAXOPERIONS;i++)
-		{
-			arrayres[global_idx]=arry0shared[threadIdx.x]%arry1shared[threadIdx.x];
-		}
-    }
+	 for(int offset=0;offset<totalnumofThreads;offset+=num_elements){
+		 if((global_idx>=offset) && (global_idx<offset+num_elements))
+		 {
+			copy_data_to_shared(array0,arry0shared,num_elements,global_idx);//array0-->arry0shared
+			copy_data_to_shared(array1,arry1shared,num_elements,global_idx);//array1-->arry1shared
+			if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
+				arrayres[global_idx]=arry0shared[global_idx-offset]%arry1shared[global_idx-offset];
+		    }
+		 }		 
+	 }
 }
 __global__ void gpu_arrayMod_const(int* arrayres,int offset) {
 
@@ -263,9 +236,13 @@ __global__ void gpu_arrayMod_const(int* arrayres,int offset) {
     const int global_idx = ((gridDim.x * blockDim.x) * idy) + idx;
     
 	if(idx<(gridDim.x*blockDim.x) && idy<(gridDim.y*blockDim.y)){
-	   for(int i=0;i<MAXOPERIONS;i++){
-		 arrayres[offset+global_idx]=constarray0[global_idx]%constarray1[global_idx];	
-	   }
+		
+		if((global_idx>=offset) && (global_idx<offset+MAXARRAYSIZE)){
+			arrayres[global_idx]=constarray0[global_idx-offset]%constarray1[global_idx-offset];	
+		}
+		else{
+			
+		}
 	}	
 }
 
@@ -407,23 +384,13 @@ __host__ void execute_gpu_arrayMod(int numBlocks,int blockSize,int *const gpu_ar
 
 __device__ void copy_data_to_shared(const int * const data,
 									int * const shared_tmp,
-									const int globalid,
+									const int num_elements,
 									const int tid)
 {
 	// deepcopy
 
-	shared_tmp[tid] = data[globalid];
+		shared_tmp[tid%num_elements] = data[tid];
 	__syncthreads();// synchronize all the threads within a block
-}
-
-__device__ void copy_data_from_shared(int * const data,
-									 int * const shared_tmp,
-									const int globalid,
-									const int tid)
-{
-	// deepcopy
-	__syncthreads();// synchronize all the threads within a block
-	data[globalid]=shared_tmp[tid];
 }
 
 
@@ -474,8 +441,8 @@ __host__ void execute_gpu_sharedmem_arrayAdd(int numBlocks,int blockSize,int *co
 	int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
 	
 	/* layout specification*/
-	const dim3 threads_layout(blockSize,1); // using 1 row, blockSize colmns layout 
-    const dim3 blocks_layout(numBlocks,1);// there are multiple ways of layout to achieve numBlocks, I choose to fix the  1 row, numBlocks colmn layout
+	const dim3 threads_layout(WARP,blockSize/WARP); // there are multiple ways of layout to achieve blocksize. I choose to fix the  blockDim.x as the WARP size
+    const dim3 blocks_layout(1,numBlocks);// there are multiple ways of layout to achieve numBlocks, I choose to fix the gridDim.x to 1
 	
 	cudaEvent_t kernel_start1, kernel_stop1;
 	float delta_time1 = 0.0f;
@@ -483,7 +450,7 @@ __host__ void execute_gpu_sharedmem_arrayAdd(int numBlocks,int blockSize,int *co
 	cudaEventCreateWithFlags(&kernel_stop1,cudaEventBlockingSync);
 	//record events around kernel launch
 	cudaEventRecord(kernel_start1, 0);//0 is the default stream
-	gpu_arrayAdd_shared<<<blocks_layout,threads_layout,blockSize*3*sizeof(int)>>>(gpu_array0,gpu_array1,gpu_arrayresult);
+	gpu_arrayAdd_shared<<<blocks_layout,threads_layout,MAXSHAREDMEMSIZE>>>(gpu_array0,gpu_array1,gpu_arrayresult,MAXSHAREDMEMSIZE/2/sizeof(int),totalThreads);
 	cudaEventRecord(kernel_stop1, 0);
 	cudaEventSynchronize(kernel_stop1);
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);	
@@ -509,8 +476,8 @@ __host__ void execute_gpu_sharedmem_arraySubtract(int numBlocks,int blockSize,in
 	int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
 	
 	/* layout specification*/
-	const dim3 threads_layout(blockSize,1); // 
-    const dim3 blocks_layout(numBlocks,1);// 
+	const dim3 threads_layout(WARP,blockSize/WARP); // there are multiple ways of layout to achieve blocksize. I choose to fix the  blockDim.x as the WARP size
+    const dim3 blocks_layout(1,numBlocks);// there are multiple ways of layout to achieve numBlocks, I choose to fix the gridDim.x to 1
 	
 	cudaEvent_t kernel_start1, kernel_stop1;
 	float delta_time1 = 0.0f;
@@ -519,7 +486,7 @@ __host__ void execute_gpu_sharedmem_arraySubtract(int numBlocks,int blockSize,in
 	
 	//record events around kernel launch
 	cudaEventRecord(kernel_start1, 0);//0 is the default stream
-	gpu_arraySubtract_shared<<<blocks_layout,threads_layout,blockSize*2*sizeof(int)>>>(gpu_array0,gpu_array1,gpu_arrayresult);
+	gpu_arraySubtract_shared<<<blocks_layout,threads_layout,MAXSHAREDMEMSIZE>>>(gpu_array0,gpu_array1,gpu_arrayresult,MAXSHAREDMEMSIZE/2/sizeof(int),totalThreads);
 	cudaEventRecord(kernel_stop1, 0);
 	cudaEventSynchronize(kernel_stop1);
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
@@ -543,8 +510,8 @@ __host__ void execute_gpu_sharedmem_arrayMult(int numBlocks,int blockSize,int *c
 	int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
 	
 	/* layout specification*/
-	const dim3 threads_layout(blockSize,1); // 
-    const dim3 blocks_layout(numBlocks,1);// 
+	const dim3 threads_layout(WARP,blockSize/WARP); // there are multiple ways of layout to achieve blocksize. I choose to fix the  blockDim.x as the WARP size
+    const dim3 blocks_layout(1,numBlocks);// there are multiple ways of layout to achieve numBlocks, I choose to fix the gridDim.x to 1
 	
 	cudaEvent_t kernel_start1, kernel_stop1;
 	float delta_time1 = 0.0f;
@@ -553,7 +520,7 @@ __host__ void execute_gpu_sharedmem_arrayMult(int numBlocks,int blockSize,int *c
 	
 	//record events around kernel launch
 	cudaEventRecord(kernel_start1, 0);//0 is the default stream
-	gpu_arrayMult_shared<<<blocks_layout,threads_layout,blockSize*2*sizeof(int)>>>(gpu_array0,gpu_array1,gpu_arrayresult);
+	gpu_arrayMult_shared<<<blocks_layout,threads_layout,MAXSHAREDMEMSIZE>>>(gpu_array0,gpu_array1,gpu_arrayresult,MAXSHAREDMEMSIZE/2/sizeof(int),totalThreads);
 	cudaEventRecord(kernel_stop1, 0);//0 is the default stream
 	cudaEventSynchronize(kernel_stop1);
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
@@ -576,9 +543,9 @@ __host__ void execute_gpu_sharedmem_arrayMod(int numBlocks,int blockSize,int *co
 	int cpu_arr_size_x=totalThreads;//column
 	int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
 	
-    /* layout specification*/
-	const dim3 threads_layout(blockSize,1); // 
-    const dim3 blocks_layout(numBlocks,1);// 
+	/* layout specification*/
+	const dim3 threads_layout(WARP,blockSize/WARP); // there are multiple ways of layout to achieve blocksize. I choose to fix the  blockDim.x as the WARP size
+    const dim3 blocks_layout(1,numBlocks);// there are multiple ways of layout to achieve numBlocks, I choose to fix the gridDim.x to 1
 	
 	cudaEvent_t kernel_start1, kernel_stop1;
 	float delta_time1 = 0.0f;
@@ -587,7 +554,7 @@ __host__ void execute_gpu_sharedmem_arrayMod(int numBlocks,int blockSize,int *co
 	
 	//record events around kernel launch
 	cudaEventRecord(kernel_start1, 0);//0 is the default stream
-	gpu_arrayMod_shared<<<blocks_layout,threads_layout,blockSize*2*sizeof(int)>>>(gpu_array0,gpu_array1,gpu_arrayresult);
+	gpu_arrayMod_shared<<<blocks_layout,threads_layout,MAXSHAREDMEMSIZE>>>(gpu_array0,gpu_array1,gpu_arrayresult,MAXSHAREDMEMSIZE/2/sizeof(int),totalThreads);
 	cudaEventRecord(kernel_stop1, 0);//0 is the default stream
 	cudaEventSynchronize(kernel_stop1);
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);						
@@ -612,8 +579,8 @@ __host__ void execute_gpu_constmem_arrayAdd(int numBlocks,int blockSize,int *con
 	int size_in_bytes = cpu_arr_size_x* cpu_arr_size_y* sizeof(int);
 	
 	/* layout specification*/
-	const dim3 threads_layout(blockSize,1); // 
-    const dim3 blocks_layout(numBlocks,1);// 
+	const dim3 threads_layout(WARP,blockSize/WARP); // there are multiple ways of layout to achieve blocksize. I choose to fix the  blockDim.x as the WARP size
+    const dim3 blocks_layout(1,numBlocks);// there are multiple ways of layout to achieve numBlocks, I choose to fix the gridDim.x to 1
 	
 	cudaEvent_t kernel_start1, kernel_stop1;
 	float delta_time1 = 0.0f;
@@ -642,12 +609,11 @@ __host__ void execute_gpu_constmem_arrayAdd(int numBlocks,int blockSize,int *con
 	else{// totalThreads>MAXARRAYSIZE		
 		for(offset=0;offset<(int)totalThreads;offset+=(int)MAXARRAYSIZE)
 		{
-			// copy from host mem to device const mem
 			cudaMemcpyToSymbol(constarray0,&cpu_array0[offset], sizeof(int)*MAXARRAYSIZE,0,cudaMemcpyHostToDevice );
 			cudaMemcpyToSymbol(constarray1,&cpu_array1[offset], sizeof(int)*MAXARRAYSIZE,0,cudaMemcpyHostToDevice );
 		    //record events around kernel launch
 			cudaEventRecord(kernel_start1, 0);//0 is the default stream
-			gpu_arrayAdd_const<<<MAXARRAYSIZE/blockSize,blockSize>>>(gpu_arrayresult,offset);
+			gpu_arrayAdd_const<<<blocks_layout,threads_layout>>>(gpu_arrayresult,offset);
 			cudaEventRecord(kernel_stop1, 0);
 			cudaEventSynchronize(kernel_stop1);
 			cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
@@ -712,7 +678,7 @@ __host__ void execute_gpu_constmem_arraySubtract(int numBlocks,int blockSize,int
 			cudaMemcpyToSymbol(constarray1,&cpu_array1[offset], sizeof(int)*MAXARRAYSIZE,0,cudaMemcpyHostToDevice );
 		    //record events around kernel launch
 			cudaEventRecord(kernel_start1, 0);//0 is the default stream
-			gpu_arraySubtruct_const<<<MAXARRAYSIZE/blockSize,blockSize>>>(gpu_arrayresult,offset);
+			gpu_arraySubtruct_const<<<blocks_layout,threads_layout>>>(gpu_arrayresult,offset);
 			cudaEventRecord(kernel_stop1, 0);
 			cudaEventSynchronize(kernel_stop1);
 			cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
@@ -776,7 +742,7 @@ __host__ void execute_gpu_constmem_arrayMult(int numBlocks,int blockSize,int *co
 			cudaMemcpyToSymbol(constarray1,&cpu_array1[offset], sizeof(int)*MAXARRAYSIZE,0,cudaMemcpyHostToDevice );
 		    //record events around kernel launch
 			cudaEventRecord(kernel_start1, 0);//0 is the default stream
-			gpu_arrayMult_const<<<MAXARRAYSIZE/blockSize,blockSize>>>(gpu_arrayresult,offset);
+			gpu_arrayMult_const<<<blocks_layout,threads_layout>>>(gpu_arrayresult,offset);
 			cudaEventRecord(kernel_stop1, 0);
 			cudaEventSynchronize(kernel_stop1);
 			cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
@@ -841,7 +807,7 @@ __host__ void execute_gpu_constmem_arrayMod(int numBlocks,int blockSize,int *con
 			cudaMemcpyToSymbol(constarray1,&cpu_array1[offset], sizeof(int)*MAXARRAYSIZE,0,cudaMemcpyHostToDevice );
 		    //record events around kernel launch
 			cudaEventRecord(kernel_start1, 0);//0 is the default stream
-			gpu_arrayMod_const<<<MAXARRAYSIZE/blockSize,blockSize>>>(gpu_arrayresult,offset);
+			gpu_arrayMod_const<<<blocks_layout,threads_layout>>>(gpu_arrayresult,offset);
 			cudaEventRecord(kernel_stop1, 0);
 			cudaEventSynchronize(kernel_stop1);
 			cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
@@ -1016,17 +982,16 @@ void execute_gpu_const_test(int numBlocks, int blockSize){
 	}
 	
 	 /* Device memory allocation */
-    //int * gpu_array0, * gpu_array1,*gpu_arrayresult;
-	//cudaMalloc((void **)&gpu_array0, size_in_bytes);
-	//cudaMalloc((void **)&gpu_array1, size_in_bytes);
-	int *gpu_arrayresult;
+    int * gpu_array0, * gpu_array1,*gpu_arrayresult;
+	cudaMalloc((void **)&gpu_array0, size_in_bytes);
+	cudaMalloc((void **)&gpu_array1, size_in_bytes);
     cudaMalloc((void **)&gpu_arrayresult, size_in_bytes);
 
 		
 	
 	/* explicit memory copy from cpu to device*/
-	//cudaMemcpy( gpu_array0,cpu_array0 , size_in_bytes, cudaMemcpyHostToDevice );
-    //cudaMemcpy( gpu_array1,cpu_array1 , size_in_bytes, cudaMemcpyHostToDevice );
+	cudaMemcpy( gpu_array0,cpu_array0 , size_in_bytes, cudaMemcpyHostToDevice );
+    cudaMemcpy( gpu_array1,cpu_array1 , size_in_bytes, cudaMemcpyHostToDevice );
 	
 	/* Execute 4 simple math operation*/ 
 	for(int kernel=0; kernel<4; kernel++)
@@ -1058,8 +1023,8 @@ void execute_gpu_const_test(int numBlocks, int blockSize){
 	free(cpu_array1);
 	free(cpu_array_res);
     /* Free the arrays on the GPU as now we're done with them */
-   // cudaFree(gpu_array0);
-	//cudaFree(gpu_array1);
+    cudaFree(gpu_array0);
+	cudaFree(gpu_array1);
     cudaFree(gpu_arrayresult);	
 	//Destroy all allocations and reset all state on the current device in the current process
 	cudaDeviceReset();
