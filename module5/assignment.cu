@@ -295,6 +295,7 @@ __host__ void execute_gpu_arrayAdd(int numBlocks,int blockSize,int *const gpu_ar
 	
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
 	printf("Kernel 0 (Add) is called! \n");
+	printf("The Kernel 0 (Add) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE)
 	{
 		printf("Array Result:\n");
@@ -328,6 +329,7 @@ __host__ void execute_gpu_arraySubtract(int numBlocks,int blockSize,int *const g
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
 	printf("Kernel 1 (subtract) is called! \n");
+	printf("The Kernel 1 (subtract) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE){
 		printf("Array Result:\n");
 		print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);					 
@@ -361,6 +363,7 @@ __host__ void execute_gpu_arrayMult(int numBlocks,int blockSize,int *const gpu_a
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
 	printf("Kernel 2 (multiplication) is called! \n");
+	printf("Kernel 2 (multiplication) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE){
 		 printf("Array Result:\n");
 		 print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x); 
@@ -393,6 +396,7 @@ __host__ void execute_gpu_arrayMod(int numBlocks,int blockSize,int *const gpu_ar
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);						
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu 
 	printf("Kernel 3 (mod) is called! \n");
+	printf("Kernel 3 (mod) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE){
 		printf("Array Result:\n");
 		print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);  
@@ -490,6 +494,7 @@ __host__ void execute_gpu_sharedmem_arrayAdd(int numBlocks,int blockSize,int *co
 	
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
 	printf("Kernel 0 (Add) is called! \n");
+	printf("The Kernel 0 (Add) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE)
 	{
 		printf("Array Result:\n");
@@ -525,6 +530,7 @@ __host__ void execute_gpu_sharedmem_arraySubtract(int numBlocks,int blockSize,in
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
 	printf("Kernel 1 (subtract) is called! \n");
+	printf("The Kernel 1 (subtract) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE){
 		printf("Array Result:\n");
 		print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);					 
@@ -559,6 +565,7 @@ __host__ void execute_gpu_sharedmem_arrayMult(int numBlocks,int blockSize,int *c
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
 	printf("Kernel 2 (multiplication) is called! \n");
+	printf("Kernel 2 (multiplication) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE){
 		 printf("Array Result:\n");
 		 print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x); 
@@ -593,6 +600,7 @@ __host__ void execute_gpu_sharedmem_arrayMod(int numBlocks,int blockSize,int *co
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);						
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu 
 	printf("Kernel 3 (mod) is called! \n");
+	printf("Kernel 3 (mod) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE){
 		printf("Array Result:\n");
 		print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);  
@@ -658,6 +666,7 @@ __host__ void execute_gpu_constmem_arrayAdd(int numBlocks,int blockSize,int *con
 
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
 	printf("Kernel 0 (Add) is called! \n");
+	printf("The Kernel 0 (Add) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE)
 	{
 		printf("Array Result:\n");
@@ -723,6 +732,7 @@ __host__ void execute_gpu_constmem_arraySubtract(int numBlocks,int blockSize,int
 
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
 	printf("Kernel 1 (subtract) is called! \n");
+	printf("The Kernel 1 (subtract) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE){
 		printf("Array Result:\n");
 		print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);					 
@@ -787,6 +797,7 @@ __host__ void execute_gpu_constmem_arrayMult(int numBlocks,int blockSize,int *co
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
 
 	printf("Kernel 2 (multiplication) is called! \n");
+	printf("Kernel 2 (multiplication) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE){
 		 printf("Array Result:\n");
 		 print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x); 
@@ -852,6 +863,7 @@ __host__ void execute_gpu_constmem_arrayMod(int numBlocks,int blockSize,int *con
 	cudaMemcpy(cpu_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost); // memcopy from gpu to cpu
 
 	printf("Kernel 3 (mod) is called! \n");
+	printf("Kernel 3 (mod) performs the math operation %d times! \n",MAXOPERIONS);
 	if(VERBOSE){
 		printf("Array Result:\n");
 		print_array(cpu_array_res,cpu_arr_size_y,cpu_arr_size_x);  
