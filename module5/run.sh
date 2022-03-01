@@ -39,17 +39,17 @@ make
 ./assignment 1048576 1024
 
 echo "----------------------------------------------------------------------------"
-echo "Test 1.3: perform math operation on two arrays with 1048576 elements 1000 times . blocksize=32 "
+echo "Test 1.4: perform math operation on two arrays with 1048576 elements 1000 times . blocksize=32 "
 echo "----------------------------------------------------------------------------"
 ./assignment 1048576 32
 
 echo "----------------------------------------------------------------------------"
-echo "Test 1.4: perform math operation on two arrays with 2048 elements 1000 times . blocksize=256 "
+echo "Test 1.5: perform math operation on two arrays with 2048 elements 1000 times . blocksize=256 "
 echo "----------------------------------------------------------------------------"
 ./assignment 2048 256
 
 echo "----------------------------------------------------------------------------"
-echo "Test 1.5: perform math operation on two arrays with 2048 elements 10000 times . blocksize=256 "
+echo "Test 1.6: perform math operation on two arrays with 2048 elements 10000 times . blocksize=256 "
 echo "----------------------------------------------------------------------------"
 make MAXOPERIONS=10000
 ./assignment 2048 256
