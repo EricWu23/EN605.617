@@ -57,12 +57,13 @@ __host__ void gpu_kernel(void)
         cudaMemcpy(host_packed_array_output, data_gpu, num_bytes,cudaMemcpyDeviceToHost);
 
         for (int i = 0; i < num_elements; i++){
-                printf("Input value: %x, device output: %x\n",host_packed_array[i], host_packed_array_output[i]);
+                //printf("Input value: %x, device output: %x\n",host_packed_array[i], host_packed_array_output[i]);
+				printf("Input value: %u, device output: %u\n",host_packed_array[i], host_packed_array_output[i]);
         }
 
         cudaFree((void* ) data_gpu);
         cudaDeviceReset();
-//        wait_exit();
+        wait_exit();
 }
 
 void execute_host_functions()

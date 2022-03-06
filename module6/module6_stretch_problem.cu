@@ -8,10 +8,16 @@ unsigned int num_threads = 256;
 
  // from global_memory.cu file provided in Module 4 Vocareum lab
 // create a timer object to test the duration of an operation
-__host__ cudaEvent_t get_time(void)
+__host__ cudaEvent_t get_time(unsigned int type)
 {
 	cudaEvent_t time;
-	cudaEventCreate(&time);
+	if(type==0){	
+		cudaEventCreate(&time);
+	}
+	else{
+		cudaEventCreateWithFlags(&time,cudaEventBlockingSync);
+		
+	}
 	cudaEventRecord(time);
 	return time;
 }
@@ -51,7 +57,8 @@ __device__ void calc_shared_mem(unsigned int * coeff_mat, unsigned int * shared_
 {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	unsigned int padding = (index / ((NUM_COLS*NUM_ROWS) / 2))*NUM_COLS;
-	for (int i = 0; i < NUM_COLS; i++) { shared_mat[i] = coeff_mat[i + padding];}
+	//for (int i = 0; i < NUM_COLS; i++) { shared_mat[i] = coeff_mat[i + padding];}
+	shared_mat[index%NUM_COLS]=coeff_mat[index%NUM_COLS + padding];
 }
 
 // load data into shared memory and perform linear model multiplication (y=mx) using shared memory
@@ -67,7 +74,7 @@ __global__ void linear_multiply_shared_mem_device(unsigned int * var_mat, unsign
 __global__ void linear_multiply_register_mem_device(unsigned int * var_mat, unsigned int * result_mat) 
 {
 	unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
-   	unsigned int register_mem[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+   	unsigned int register_mem[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};// while each thread has its local registers. Each thread just needs one data from the register, isn't it a waster to declare 16 number array?
 	atomicAdd(&result_mat[index / NUM_COLS], var_mat[index] * register_mem[index % NUM_COLS]);
 }
 
@@ -175,21 +182,25 @@ float linear_multiply_register_mem_host(bool debug, int num_thrd)
 	fill_matrix(NUM_REGISTER_COEFF, 1, h_coeff);
               
     // measure how long it takes to copy data to device, run a kernel, and copy the data back to host
-	cudaEvent_t start_time = get_time();
+	//cudaEvent_t start_time = get_time();
 
 	// copy data to device
 	cudaMemcpy(d_var, h_var, sizeof(unsigned int)* (NUM_COLS*NUM_ROWS), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_results, h_results, sizeof(unsigned int)*(NUM_ROWS), cudaMemcpyHostToDevice);
 	
 	// perform linear multiplication on GPU and copy data from GPU to host
+	cudaEvent_t start_time = get_time(0);
 	linear_multiply_register_mem_device << <(NUM_ROWS*NUM_COLS + num_threads - 1) / num_threads, num_threads >> > (d_var, d_results);
-	cudaMemcpy(h_results, d_results, sizeof(unsigned int)*NUM_ROWS, cudaMemcpyDeviceToHost);
-
+    
 	// finish timing performance and record result
- 	cudaEvent_t end_time = get_time();
+ 	cudaEvent_t end_time = get_time(1);
 	cudaEventSynchronize(end_time);
 	float delta = 0;
-	cudaEventElapsedTime(&delta, start_time, end_time); 	
+	cudaEventElapsedTime(&delta, start_time, end_time); 
+	
+	cudaMemcpy(h_results, d_results, sizeof(unsigned int)*NUM_ROWS, cudaMemcpyDeviceToHost);
+
+	
  
 	// print select rows of results for debugging, quality assurance purposes
 	if (debug) { print_select_results(h_results);}
@@ -224,7 +235,7 @@ float linear_multiply_shared_mem_host(bool debug, int num_thrd)
 	if (status != cudaSuccess) printf("Error allocating pinned hot memory\n"); // from Mark Harris, NVidia blogs                                                  
     status = cudaMallocHost((void**)&h_results, sizeof(unsigned int) *NUM_ROWS);
 	if (status != cudaSuccess) printf("Error allocating pinned hot memory\n"); // from Mark Harris, NVidia blogs                                                                                                  
-    status = cudaMallocHost((void**)&h_coeff, sizeof(unsigned int) *NUM_REGISTER_COEFF);
+    status = cudaMallocHost((void**)&h_coeff, sizeof(unsigned int) *NUM_SHARED_COEFF);
 	if (status != cudaSuccess) printf("Error allocating pinned hot memory\n"); // from Mark Harris, NVidia blogs        
  
 	// fill declared matrices with default values (row + column index)
@@ -232,7 +243,7 @@ float linear_multiply_shared_mem_host(bool debug, int num_thrd)
 	fill_matrix(NUM_SHARED_COEFF, 1, h_coeff);
  
  	// measure how long it takes to copy data to device, run a kernel, and copy the data back to host
-	cudaEvent_t start_time = get_time();
+	//cudaEvent_t start_time = get_time();
 
 	// copy data to device, including constant memory
 	cudaMemcpy(d_coeff, h_coeff, sizeof(unsigned int) * NUM_SHARED_COEFF, cudaMemcpyHostToDevice);
@@ -242,15 +253,17 @@ float linear_multiply_shared_mem_host(bool debug, int num_thrd)
 	
 	
 	// perform linear multiplication on GPU and copy data from GPU to host
+	cudaEvent_t start_time = get_time(0);
 	linear_multiply_shared_mem_device << <(NUM_ROWS*NUM_COLS + num_threads - 1) / num_threads, num_threads >> > (d_var, d_coeff, d_results);
-	cudaMemcpy(h_results, d_results, sizeof(unsigned int)*NUM_ROWS, cudaMemcpyDeviceToHost);
-
-	// finish timing performance and record result
-	cudaEvent_t end_time = get_time();
+		// finish timing performance and record result
+	cudaEvent_t end_time = get_time(1);
 	cudaEventSynchronize(end_time);
 	float delta = 0;
 	cudaEventElapsedTime(&delta, start_time, end_time); 	
  
+	cudaMemcpy(h_results, d_results, sizeof(unsigned int)*NUM_ROWS, cudaMemcpyDeviceToHost);
+
+
 	// print select rows of results for debugging, quality assurance purposes
  	if (debug) { print_select_results(h_results);}
 
@@ -263,7 +276,8 @@ float linear_multiply_shared_mem_host(bool debug, int num_thrd)
 	cudaFreeHost(h_var);
 	cudaFreeHost(h_results);
 	cudaFreeHost(h_coeff);
-	
+   //Destroy all allocations and reset all state on the current device in the current process
+	cudaDeviceReset();
 	return delta;
 }
 
