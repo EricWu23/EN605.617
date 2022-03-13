@@ -37,18 +37,18 @@ int main ( int argc, char **argv )
 
   cudaStream_t stream; 
   cudaStreamCreate(&stream); 
-
+// device memory
   cudaMalloc( ( void**)& device_a, sizeOfArray * sizeof ( *device_a ) ); 
   cudaMalloc( ( void**)& device_b,sizeOfArray * sizeof ( *device_b ) ); 
   cudaMalloc( ( void**)& device_result, sizeOfArray * sizeof ( *device_result ) ); 
-
+// host pinned memory
   cudaHostAlloc((void **)&host_a, sizeOfArray*sizeof(int), cudaHostAllocDefault);
   cudaHostAlloc((void **)&host_b, sizeOfArray*sizeof(int), cudaHostAllocDefault);
   cudaHostAlloc((void **)&host_result, sizeOfArray*sizeof(int), cudaHostAllocDefault);
 
   for(int index = 0; index < sizeOfArray; index++) 
   { 
-   host_a[index] = rand()%10; 
+   host_a[index] = rand()%10; // create random number between 0 and 9
    host_b[index] = rand()%10; 
   } 
 
