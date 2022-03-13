@@ -1,8 +1,17 @@
+include sources.mk
+
+
 VERBOSE = 0
 MAXOPERIONS =1000
-CFLAGS =-std=c++11 -DVERBOSE[=$(VERBOSE)] -DMAXOPERIONS[=$(MAXOPERIONS)]
+CFLAGS =-std=c++11 --device-c -DVERBOSE[=$(VERBOSE)] -DMAXOPERIONS[=$(MAXOPERIONS)]
+
+CC = nvcc
+LD= nvcc
+
+OBJS = $(SOURCES:.cu=.o)
 all: *.cu
-	nvcc assignment.cu $(CFLAGS) -L /usr/local/cuda/lib -lcudart -o assignment
+	$(CC) $(CFLAGS) $(SOURCES)
+	$(CC) $(OBJS) -L /usr/local/cuda/lib -lcudart -o assignment
 .PHONY: clean
 clean:
-	rm -f assignment register module6_stretch_problem
+	rm -f $(OBJS) assignment $(IRRELEVANT)
