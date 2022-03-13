@@ -5,9 +5,12 @@
 #include "utility.h"
 #include "globalmacro.h"
 #include "globalpagable.h"
+#include "globalpinnedmem.h"
 #include "sharedmem.h"
 #include "constmem.h"
 #include "registermem.h"
+#include "stream.h"
+
 
 #ifndef MAXOPERIONS // this specifies how many operations to run inside a kernel
 	#define MAXOPERIONS 100
@@ -45,8 +48,10 @@ int main(int argc, char** argv)
 		printf("Warning: Total thread count is not evenly divisible by the block size\n");
 		printf("The total number of threads will be rounded up to %d\n", totalThreads);
 	}
-	execute_gpu_global_test(numBlocks,blockSize); //  test harness for executing kernel using global memory
-	execute_gpu_shared_test(numBlocks,blockSize); //  test harness for executing kernel using shared memory
-	execute_gpu_const_test(numBlocks,blockSize);  //  test harness for executing kernel using constant memory
-	execute_gpu_register_test(numBlocks,blockSize);  //  test harness for executing kernel using register memory
+	//execute_gpu_global_test(numBlocks,blockSize); //  test harness for executing kernel using global memory but pagable host mem
+	execute_gpu_pinnedmem_test(numBlocks,blockSize); //  test harness for executing kernel using global memory but pinned Host mem
+	//execute_gpu_shared_test(numBlocks,blockSize); //  test harness for executing kernel using shared memory
+	//execute_gpu_const_test(numBlocks,blockSize);  //  test harness for executing kernel using constant memory
+	//execute_gpu_register_test(numBlocks,blockSize);  //  test harness for executing kernel using register memory
+	execute_gpu_stream_test(numBlocks,blockSize);// test harness for executing kernel using global device mem and stream
 }
