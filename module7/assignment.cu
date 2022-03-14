@@ -10,14 +10,9 @@
 #include "constmem.h"
 #include "registermem.h"
 #include "stream.h"
+#include "stream_concurrency.h"
+#include "stream_kernelconcurrency.h"
 
-
-#ifndef MAXOPERIONS // this specifies how many operations to run inside a kernel
-	#define MAXOPERIONS 100
-#endif
-#ifndef VERBOSE 
-	#define VERBOSE 0
-#endif
 
 int main(int argc, char** argv)
 {
@@ -53,5 +48,8 @@ int main(int argc, char** argv)
 	//execute_gpu_shared_test(numBlocks,blockSize); //  test harness for executing kernel using shared memory
 	//execute_gpu_const_test(numBlocks,blockSize);  //  test harness for executing kernel using constant memory
 	//execute_gpu_register_test(numBlocks,blockSize);  //  test harness for executing kernel using register memory
-	execute_gpu_stream_test(numBlocks,blockSize);// test harness for executing kernel using global device mem and stream
+	execute_gpu_stream_test(numBlocks,blockSize);// test harness for executing kernel using global device mem and stream (all in one stream)
+	execute_gpu_streamconcurrency_test(numBlocks,blockSize);//testing harness for the asynchronous memory copy using streams
+	execute_gpu_streamkernelconcurrency_test(numBlocks,blockSize);// test harness for testing kernel concurrency using streams
+	execute_gpu_streamNokernelconcurrency_test(numBlocks,blockSize);// test harness for testing No kernel concurrency
 }

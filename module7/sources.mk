@@ -6,7 +6,9 @@ SOURCESLOCATION =	assignment.cu \
 	$(CONSTMEM)/constmem.cu \
 	$(REGISTERS)/registermem.cu \
 	$(PINNEDMEM)/globalpinnedmem.cu \
-	$(STREAM)/stream.cu
+	$(STREAM)/stream.cu \
+	$(STREAM)/stream_concurrency.cu \
+	$(STREAM)/stream_kernelconcurrency.cu
 # Add your Source files to this variable
 SOURCES =	assignment.cu \
 			utility.cu \
@@ -15,7 +17,9 @@ SOURCES =	assignment.cu \
 			constmem.cu \
 			registermem.cu \
 			globalpinnedmem.cu \
-			stream.cu
+			stream.cu \
+			stream_concurrency.cu \
+			stream_kernelconcurrency.cu
 # Add your files to be cleaned but not part of the project
 IRRELEVANT =	multi_gpu_example \
 				multiGPU \

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "stream.h"
+#include "stream_concurrency.h"
 #include "utility.h"
 #include "globalmacro.h"
 
@@ -58,7 +58,7 @@ __global__ void arrayMod(int *array0,int *array1,int* arrayres) {
     }
 }
 
-__host__ void execute_gpu_stream_arrayAdd(int numBlocks,int blockSize,int *const gpu_array0,int * const gpu_array1,int* const gpu_arrayresult,int* const h_array_res,int* const h_array0,int* const h_array1){ 	
+__host__ void execute_gpu_streamconcurrency_arrayAdd(int numBlocks,int blockSize,int *const gpu_array0,int * const gpu_array1,int* const gpu_arrayresult,int* const h_array_res,int* const h_array0,int* const h_array1){ 	
     int totalThreads=numBlocks*blockSize;
 	int cpu_arr_size_y=1;//row
 	int cpu_arr_size_x=totalThreads;//column
@@ -70,13 +70,16 @@ __host__ void execute_gpu_stream_arrayAdd(int numBlocks,int blockSize,int *const
 	cudaEventCreate(&kernel_start1);
 	cudaEventCreateWithFlags(&kernel_stop1,cudaEventBlockingSync);
 	cudaStream_t stream1; 
-    cudaStreamCreate(&stream1); 
+    cudaStreamCreate(&stream1);
+	cudaStream_t stream2; 
+    cudaStreamCreate(&stream2); 	
 	cudaEventRecord(kernel_start1, 0);//0 is the default stream
 	cudaMemcpyAsync(gpu_array0,h_array0,size_in_bytes,cudaMemcpyHostToDevice, stream1);
-	cudaMemcpyAsync(gpu_array1,h_array1,size_in_bytes,cudaMemcpyHostToDevice, stream1); 	
-	arrayAdd<<<blocks_layout,threads_layout,0,stream1>>>(gpu_array0,gpu_array1,gpu_arrayresult); // kernel call to add two 2-D arrays 
-	cudaMemcpyAsync(h_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost,stream1); // memcopy from gpu to cpu
+	cudaMemcpyAsync(gpu_array1,h_array1,size_in_bytes,cudaMemcpyHostToDevice, stream2); 	
+	arrayAdd<<<blocks_layout,threads_layout,0,stream2>>>(gpu_array0,gpu_array1,gpu_arrayresult); // kernel call to add two 2-D arrays 
+	cudaMemcpyAsync(h_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost,stream2); // memcopy from gpu to cpu
 	cudaStreamSynchronize(stream1);
+	cudaStreamSynchronize(stream2);
 	cudaEventRecord(kernel_stop1, 0);
 	cudaEventSynchronize(kernel_stop1);
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);	
@@ -85,8 +88,9 @@ __host__ void execute_gpu_stream_arrayAdd(int numBlocks,int blockSize,int *const
 	printf("GPU execution with global mem takes: %.3fms\n",delta_time1);printf("*******\n");
 	cudaEventDestroy(kernel_start1);cudaEventDestroy(kernel_stop1);
 	cudaStreamDestroy(stream1);//destroy the stream (blocks host until stream is completed)
+	cudaStreamDestroy(stream2);
 }
-__host__ void execute_gpu_stream_arraySubtract(int numBlocks,int blockSize,int *const gpu_array0,int * const gpu_array1,int* const gpu_arrayresult,int* const h_array_res,int* const h_array0,int* const h_array1){
+__host__ void execute_gpu_streamconcurrency_arraySubtract(int numBlocks,int blockSize,int *const gpu_array0,int * const gpu_array1,int* const gpu_arrayresult,int* const h_array_res,int* const h_array0,int* const h_array1){
 	int totalThreads=numBlocks*blockSize;
 	int cpu_arr_size_y=1;//row
 	int cpu_arr_size_x=totalThreads;//column
@@ -99,12 +103,15 @@ __host__ void execute_gpu_stream_arraySubtract(int numBlocks,int blockSize,int *
 	cudaEventCreateWithFlags(&kernel_stop1,cudaEventBlockingSync);
 	cudaStream_t stream1; 
     cudaStreamCreate(&stream1);
+	cudaStream_t stream2; 
+    cudaStreamCreate(&stream2);
 	cudaEventRecord(kernel_start1, 0);//0 is the default stream
 	cudaMemcpyAsync(gpu_array0,h_array0,size_in_bytes,cudaMemcpyHostToDevice, stream1);
-	cudaMemcpyAsync(gpu_array1,h_array1,size_in_bytes,cudaMemcpyHostToDevice, stream1);
-	arraySubtract<<<blocks_layout,threads_layout,0,stream1>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to subtract two 2-D arrays 
-	cudaMemcpyAsync(h_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost,stream1);
+	cudaMemcpyAsync(gpu_array1,h_array1,size_in_bytes,cudaMemcpyHostToDevice, stream2);
+	arraySubtract<<<blocks_layout,threads_layout,0,stream2>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to subtract two 2-D arrays 
+	cudaMemcpyAsync(h_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost,stream2);
 	cudaStreamSynchronize(stream1);
+	cudaStreamSynchronize(stream2);
 	cudaEventRecord(kernel_stop1, 0);
 	cudaEventSynchronize(kernel_stop1);
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
@@ -113,8 +120,9 @@ __host__ void execute_gpu_stream_arraySubtract(int numBlocks,int blockSize,int *
 	printf("GPU execution with global mem takes: %.3fms\n",delta_time1);printf("*******\n");
 	cudaEventDestroy(kernel_start1);cudaEventDestroy(kernel_stop1);
 	cudaStreamDestroy(stream1);//destroy the stream (blocks host until stream is completed)
+	cudaStreamDestroy(stream2);//destroy the stream (blocks host until stream is completed)
 }
-__host__ void execute_gpu_stream_arrayMult(int numBlocks,int blockSize,int *const gpu_array0,int * const gpu_array1,int* const gpu_arrayresult,int* const h_array_res,int* const h_array0,int* const h_array1){
+__host__ void execute_gpu_streamconcurrency_arrayMult(int numBlocks,int blockSize,int *const gpu_array0,int * const gpu_array1,int* const gpu_arrayresult,int* const h_array_res,int* const h_array0,int* const h_array1){
     int totalThreads=numBlocks*blockSize;
 	int cpu_arr_size_y=1;//row
 	int cpu_arr_size_x=totalThreads;//column
@@ -127,12 +135,15 @@ __host__ void execute_gpu_stream_arrayMult(int numBlocks,int blockSize,int *cons
 	cudaEventCreateWithFlags(&kernel_stop1,cudaEventBlockingSync);
 	cudaStream_t stream1; 
     cudaStreamCreate(&stream1);
+	cudaStream_t stream2; 
+    cudaStreamCreate(&stream2);
 	cudaEventRecord(kernel_start1, 0);//0 is the default stream
 	cudaMemcpyAsync(gpu_array0,h_array0,size_in_bytes,cudaMemcpyHostToDevice, stream1);
-	cudaMemcpyAsync(gpu_array1,h_array1,size_in_bytes,cudaMemcpyHostToDevice, stream1); 
-	arrayMult<<<blocks_layout,threads_layout,0,stream1>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise)multiply two 2-D arrays 
-	cudaMemcpyAsync(h_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost,stream1); // memcopy from gpu to cpu
+	cudaMemcpyAsync(gpu_array1,h_array1,size_in_bytes,cudaMemcpyHostToDevice, stream2); 
+	arrayMult<<<blocks_layout,threads_layout,0,stream2>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise)multiply two 2-D arrays 
+	cudaMemcpyAsync(h_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost,stream2); // memcopy from gpu to cpu
 	cudaStreamSynchronize(stream1);// host block until all tasks on stream1 finish
+	cudaStreamSynchronize(stream2);// host block until all tasks on stream2 finish
 	cudaEventRecord(kernel_stop1, 0);//0 is the default stream
 	cudaEventSynchronize(kernel_stop1);
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);
@@ -140,9 +151,10 @@ __host__ void execute_gpu_stream_arrayMult(int numBlocks,int blockSize,int *cons
 	if(VERBOSE){printf("Array Result:\n");print_array(h_array_res,cpu_arr_size_y,cpu_arr_size_x); }
 	printf("GPU execution with global mem takes: %.3fms\n",delta_time1);printf("*******\n");
 	cudaEventDestroy(kernel_start1);cudaEventDestroy(kernel_stop1);
-	cudaStreamDestroy(stream1);//destroy the stream (blocks host until stream is completed)	
+	cudaStreamDestroy(stream1);//destroy the stream (blocks host until stream is completed)
+	cudaStreamDestroy(stream2);//destroy the stream (blocks host until stream is completed)	
 }
-__host__ void execute_gpu_stream_arrayMod(int numBlocks,int blockSize,int *const gpu_array0,int * const gpu_array1,int* const gpu_arrayresult,int* const h_array_res,int* const h_array0,int* const h_array1){
+__host__ void execute_gpu_streamconcurrency_arrayMod(int numBlocks,int blockSize,int *const gpu_array0,int * const gpu_array1,int* const gpu_arrayresult,int* const h_array_res,int* const h_array0,int* const h_array1){
     int totalThreads=numBlocks*blockSize;
 	int cpu_arr_size_y=1;//row
 	int cpu_arr_size_x=totalThreads;//column
@@ -155,12 +167,15 @@ __host__ void execute_gpu_stream_arrayMod(int numBlocks,int blockSize,int *const
 	cudaEventCreateWithFlags(&kernel_stop1,cudaEventBlockingSync);
 	cudaStream_t stream1; 
     cudaStreamCreate(&stream1);
+	cudaStream_t stream2; 
+    cudaStreamCreate(&stream2);
 	cudaEventRecord(kernel_start1, 0);//0 is the default stream
 	cudaMemcpyAsync(gpu_array0,h_array0,size_in_bytes,cudaMemcpyHostToDevice, stream1);
-	cudaMemcpyAsync(gpu_array1,h_array1,size_in_bytes,cudaMemcpyHostToDevice, stream1); 
-	arrayMod<<<blocks_layout,threads_layout,0,stream1>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise) mod divide two 2-D arrays
-	cudaMemcpyAsync(h_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost,stream1); // memcopy from gpu to cpu
+	cudaMemcpyAsync(gpu_array1,h_array1,size_in_bytes,cudaMemcpyHostToDevice, stream2); 
+	arrayMod<<<blocks_layout,threads_layout,0,stream2>>>(gpu_array0,gpu_array1,gpu_arrayresult);//kernel call to (elementwise) mod divide two 2-D arrays
+	cudaMemcpyAsync(h_array_res, gpu_arrayresult, size_in_bytes, cudaMemcpyDeviceToHost,stream2); // memcopy from gpu to cpu
 	cudaStreamSynchronize(stream1);// host block until all tasks on stream1 finish
+	cudaStreamSynchronize(stream2);// host block until all tasks on stream1 finish
 	cudaEventRecord(kernel_stop1, 0);//0 is the default stream
 	cudaEventSynchronize(kernel_stop1);
 	cudaEventElapsedTime(&delta_time1, kernel_start1,kernel_stop1);						
@@ -168,12 +183,13 @@ __host__ void execute_gpu_stream_arrayMod(int numBlocks,int blockSize,int *const
 	if(VERBOSE){printf("Array Result:\n");print_array(h_array_res,cpu_arr_size_y,cpu_arr_size_x);}// debug only
 	printf("GPU execution with global mem takes: %.3fms\n",delta_time1);printf("*******\n");
 	cudaEventDestroy(kernel_start1);cudaEventDestroy(kernel_stop1);	
-	cudaStreamDestroy(stream1);//destroy the stream (blocks host until stream is completed)	
+	cudaStreamDestroy(stream1);//destroy the stream (blocks host until stream is completed)
+	cudaStreamDestroy(stream2);//destroy the stream (blocks host until stream is completed)		
 }
 
-void execute_gpu_stream_test(int numBlocks, int blockSize){
-	printf("Unit Test 1: Simple Math Operations with global device memory using Streams without concurrency\n");
-	printf("------------------------------------------------------------------------------------------------\n");
+void execute_gpu_streamconcurrency_test(int numBlocks, int blockSize){
+	printf("Unit Test 1: Simple Math Operations with global device memory using Streams with concurrency on H2D memory copy\n");
+	printf("---------------------------------------------------------------------------\n");
 	int totalThreads=numBlocks*blockSize;
 	int cpu_arr_size_y=1;//row
 	int cpu_arr_size_x=totalThreads;//column
@@ -185,20 +201,23 @@ void execute_gpu_stream_test(int numBlocks, int blockSize){
     cpu_array0_int(h_array0,cpu_arr_size_y,cpu_arr_size_x);
 	cpu_array1_int(h_array1,cpu_arr_size_y,cpu_arr_size_x);
 	if(VERBOSE){//print out the arrays for debuging
-		printf("The following two arrays are initialized on cpu! \n");printf("Array0:\n");print_array(h_array0,cpu_arr_size_y,cpu_arr_size_x);printf("Array1:\n");print_array(h_array1,cpu_arr_size_y,cpu_arr_size_x);}//just for debugging
+		printf("The following two arrays are initialized on cpu! \n");
+		printf("Array0:\n");print_array(h_array0,cpu_arr_size_y,cpu_arr_size_x);
+		printf("Array1:\n");print_array(h_array1,cpu_arr_size_y,cpu_arr_size_x);
+	}
     int * gpu_array0, * gpu_array1,*gpu_arrayresult;
 	cudaMalloc((void **)&gpu_array0, size_in_bytes);
 	cudaMalloc((void **)&gpu_array1, size_in_bytes);
     cudaMalloc((void **)&gpu_arrayresult, size_in_bytes);
 	for(int kernel=0; kernel<4; kernel++){//Execute 4 simple math operation
       switch(kernel){
-            case 0:{ execute_gpu_stream_arrayAdd(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,h_array_res,h_array0,h_array1);
+            case 0:{ execute_gpu_streamconcurrency_arrayAdd(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,h_array_res,h_array0,h_array1);
                     } break;                                                                                     
-            case 1:{execute_gpu_stream_arraySubtract(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,h_array_res,h_array0,h_array1);
+            case 1:{execute_gpu_streamconcurrency_arraySubtract(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,h_array_res,h_array0,h_array1);
                    }break;                                     
-           case 2:{execute_gpu_stream_arrayMult(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,h_array_res,h_array0,h_array1);
+           case 2:{execute_gpu_streamconcurrency_arrayMult(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,h_array_res,h_array0,h_array1);
                    }break;                                                                 
-           case 3:{ execute_gpu_stream_arrayMod(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,h_array_res,h_array0,h_array1);
+           case 3:{ execute_gpu_streamconcurrency_arrayMod(numBlocks,blockSize,gpu_array0,gpu_array1,gpu_arrayresult,h_array_res,h_array0,h_array1);
                    }break;                                                                   
             default: exit(1); break;}	
 	}	
