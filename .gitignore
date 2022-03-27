@@ -37,3 +37,5 @@ module4/pinnedHostmem_arithmetics
 module4/pinnedHostmem_arithmetics_2D
 module4/pinnedHostmem_arithmetics_fake2D
 module4/pageableHostmem_arithmetics_fake2D
+module8/Example/cublas_example
+module8/Example/curand_example

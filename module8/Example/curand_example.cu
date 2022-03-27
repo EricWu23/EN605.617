@@ -83,7 +83,7 @@ int main( ) {
   cudaMalloc((void**) &gpu_x1, sizeof(int));
 
   /* invoke the GPU to initialize all of the random states */
-  random1<<<1, 1>>>(time(NULL), gpu_x1);
+  random1<<<1, 1>>>(time(NULL), gpu_x1);//https://www.tutorialspoint.com/c_standard_library/c_function_time.htm
 
   /* copy the random number back */
   int x1;

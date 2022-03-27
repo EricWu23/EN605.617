@@ -11,8 +11,8 @@
 #include <cufft.h>
 #include <fstream>
 
-using namespace std;
-typedef float2 Complex;
+using namespace std;//https://medium.com/breaktheloop/why-using-namespace-std-is-used-after-including-iostream-dc5ae45db652#:~:text=%E2%80%9Cusing%20namespace%20std%E2%80%9D%20means%20we,in%20this%20namespace%20like%20this.
+typedef float2 Complex;//float2.x, float2.y
 
 
 //Found at http://techqa.info/programming/question/36889333/cuda-cufft-2d-example

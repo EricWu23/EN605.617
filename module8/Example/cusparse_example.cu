@@ -43,20 +43,20 @@ void genTridiag(int *I, int *J, float *val, int N, int nz)
     {
         if (i > 1)
         {
-            I[i] = I[i-1]+3;
+            I[i] = I[i-1]+3;//i[2]=I[1]+3=5,i[3]=I[2]+3=8,i[4]=I[3]+3=11 
         }
         else
         {
             I[1] = 2;
         }
 
-        start = (i-1)*3 + 2;
+        start = (i-1)*3 + 2;// i=1-> start=2; i=2-> start=5； i=3-> start=8 , i=N-1-> start=(N-2)*3+2=N*3-6+2=N*3-4
         J[start] = i - 1;
         J[start+1] = i;
 
         if (i < N-1)
         {
-            J[start+2] = i + 1;
+            J[start+2] = i + 1;// N*3-4+2=N*3-2
         }
 
         val[start] = val[start-1];
@@ -64,11 +64,11 @@ void genTridiag(int *I, int *J, float *val, int N, int nz)
 
         if (i < N-1)
         {
-            val[start+2] = (float)rand()/RAND_MAX;
+            val[start+2] = (float)rand()/RAND_MAX;//N*3-2
         }
     }
 
-    I[N] = nz;
+    I[N] = nz;//N+1
 }
 
 int main(int argc, char **argv)
@@ -119,10 +119,10 @@ int main(int argc, char **argv)
 
     /* Generate a random tridiagonal symmetric matrix in CSR format */
     M = N = 1048576;
-    nz = (N-2)*3 + 4;
-    I = (int *)malloc(sizeof(int)*(N+1));
-    J = (int *)malloc(sizeof(int)*nz);
-    val = (float *)malloc(sizeof(float)*nz);
+    nz = (N-2)*3 + 4;//3145726
+    I = (int *)malloc(sizeof(int)*(N+1));//N+1
+    J = (int *)malloc(sizeof(int)*nz);//3N-2
+    val = (float *)malloc(sizeof(float)*nz);//3N-2
     genTridiag(I, J, val, N, nz);
 
     x = (float *)malloc(sizeof(float)*N);
@@ -159,26 +159,26 @@ int main(int argc, char **argv)
     checkCudaErrors(cudaMalloc((void **)&d_col, nz*sizeof(int)));
     checkCudaErrors(cudaMalloc((void **)&d_row, (N+1)*sizeof(int)));
     checkCudaErrors(cudaMalloc((void **)&d_val, nz*sizeof(float)));
-    checkCudaErrors(cudaMalloc((void **)&d_x, N*sizeof(float)));
+    checkCudaErrors(cudaMalloc((void **)&d_x, N*sizeof(float)));//x
     checkCudaErrors(cudaMalloc((void **)&d_r, N*sizeof(float)));
     checkCudaErrors(cudaMalloc((void **)&d_p, N*sizeof(float)));
-    checkCudaErrors(cudaMalloc((void **)&d_Ax, N*sizeof(float)));
+    checkCudaErrors(cudaMalloc((void **)&d_Ax, N*sizeof(float)));//y
 
-    cudaMemcpy(d_col, J, nz*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_row, I, (N+1)*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_val, val, nz*sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_x, x, N*sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_r, rhs, N*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_col, J, nz*sizeof(int), cudaMemcpyHostToDevice);//J-->d_col
+    cudaMemcpy(d_row, I, (N+1)*sizeof(int), cudaMemcpyHostToDevice);//I--> d_row
+    cudaMemcpy(d_val, val, nz*sizeof(float), cudaMemcpyHostToDevice);//val--> dval
+    cudaMemcpy(d_x, x, N*sizeof(float), cudaMemcpyHostToDevice);//x-->d_x
+    cudaMemcpy(d_r, rhs, N*sizeof(float), cudaMemcpyHostToDevice);//rhs-->d_r
 
     alpha = 1.0;
     alpham1 = -1.0;
     beta = 0.0;
     r0 = 0.;
 
-    cusparseScsrmv(cusparseHandle,CUSPARSE_OPERATION_NON_TRANSPOSE, N, N, nz, &alpha, descr, d_val, d_row, d_col, d_x, &beta, d_Ax);
+    cusparseScsrmv(cusparseHandle,CUSPARSE_OPERATION_NON_TRANSPOSE, N, N, nz, &alpha, descr, d_val, d_row, d_col, d_x, &beta, d_Ax);// matrix vector product
 
-    cublasSaxpy(cublasHandle, N, &alpham1, d_Ax, 1, d_r, 1);
-    cublasStatus = cublasSdot(cublasHandle, N, d_r, 1, d_r, 1, &r1);
+    cublasSaxpy(cublasHandle, N, &alpham1, d_Ax, 1, d_r, 1);//vector*scalar+vector: d_r=d_Ax*alpham1+d_r
+    cublasStatus = cublasSdot(cublasHandle, N, d_r, 1, d_r, 1, &r1);//dot product of two vector: r1=d_r dotproduct dr
 
     k = 1;
 
@@ -187,24 +187,24 @@ int main(int argc, char **argv)
         if (k > 1)
         {
             b = r1 / r0;
-            cublasStatus = cublasSscal(cublasHandle, N, &b, d_p, 1);
-            cublasStatus = cublasSaxpy(cublasHandle, N, &alpha, d_r, 1, d_p, 1);
+            cublasStatus = cublasSscal(cublasHandle, N, &b, d_p, 1);// scale vector by a scalar:d_p=d_p*b
+            cublasStatus = cublasSaxpy(cublasHandle, N, &alpha, d_r, 1, d_p, 1);//d_p=d_r*alpha+d_p
         }
         else
         {
-            cublasStatus = cublasScopy(cublasHandle, N, d_r, 1, d_p, 1);
+            cublasStatus = cublasScopy(cublasHandle, N, d_r, 1, d_p, 1);// vector copy: d_r-->d_p
         }
 
-        cusparseScsrmv(cusparseHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, N, N, nz, &alpha, descr, d_val, d_row, d_col, d_p, &beta, d_Ax);
-        cublasStatus = cublasSdot(cublasHandle, N, d_p, 1, d_Ax, 1, &dot);
+        cusparseScsrmv(cusparseHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, N, N, nz, &alpha, descr, d_val, d_row, d_col, d_p, &beta, d_Ax);//d_Ax=alpha*A*d_p+beta*d_Ax
+        cublasStatus = cublasSdot(cublasHandle, N, d_p, 1, d_Ax, 1, &dot);//dot=d_p dotproduct d_Ax
         a = r1 / dot;
 
-        cublasStatus = cublasSaxpy(cublasHandle, N, &a, d_p, 1, d_x, 1);
+        cublasStatus = cublasSaxpy(cublasHandle, N, &a, d_p, 1, d_x, 1);//vector*scalar+vector: d_x=d_p*a+d_x
         na = -a;
-        cublasStatus = cublasSaxpy(cublasHandle, N, &na, d_Ax, 1, d_r, 1);
+        cublasStatus = cublasSaxpy(cublasHandle, N, &na, d_Ax, 1, d_r, 1);//vector*scalar+vector: d_r=d_Ax*na+d_r
 
         r0 = r1;
-        cublasStatus = cublasSdot(cublasHandle, N, d_r, 1, d_r, 1, &r1);
+        cublasStatus = cublasSdot(cublasHandle, N, d_r, 1, d_r, 1, &r1);//r1=d_r dot product d_r
         cudaThreadSynchronize();
         printf("iteration = %3d, residual = %e\n", k, sqrt(r1));
         k++;

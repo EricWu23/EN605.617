@@ -1,0 +1,1 @@
+extern void test_GPU_LinearSolve(const int ht_A,const int wd_A,const int nrhs);
