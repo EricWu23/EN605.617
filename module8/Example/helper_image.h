@@ -115,7 +115,18 @@ inline int getFileExtension(char *filename, char **extension)
     return string_length;
 }
 
+/*
+    Description: See if we can find string pointed by string_ref in the command line argument with pattern *string_ref=.
+    Params:
+            argc --- the count of commendline arguments
+            argv --- pointer to the pointer of char or a array that stores pointer to chars
+    output:
+            true if  string pointed by string_ref can be found
+            false if string pointed by string_ref can't be found
 
+    Example.
+        string_ref="input". Then we are searching for input= in the commandline arguments
+*/
 inline bool checkCmdLineFlag(const int argc, const char **argv, const char *string_ref)
 {
     bool bFound = false;
@@ -127,12 +138,12 @@ inline bool checkCmdLineFlag(const int argc, const char **argv, const char *stri
             int string_start = stringRemoveDelimiter('-', argv[i]);
             const char *string_argv = &argv[i][string_start];
 
-            const char *equal_pos = strchr(string_argv, '=');
-            int argv_length = (int)(equal_pos == 0 ? strlen(string_argv) : equal_pos - string_argv);
+            const char *equal_pos = strchr(string_argv, '=');// search for the first appearance of =, https://www.tutorialspoint.com/c_standard_library/c_function_strchr.htm. 
+            int argv_length = (int)(equal_pos == 0 ? strlen(string_argv) : equal_pos - string_argv);// we assume we have string_ref=  in the commandline argument.
 
             int length = (int)strlen(string_ref);
 
-            if (length == argv_length && !STRNCASECMP(string_argv, string_ref, length))
+            if (length == argv_length && !STRNCASECMP(string_argv, string_ref, length))// compare strings without case sensitivity
             {
                 bFound = true;
                 continue;

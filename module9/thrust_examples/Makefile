@@ -218,7 +218,7 @@ $(foreach sm,$(SMS),$(eval GENCODE_FLAGS += -gencode arch=compute_$(sm),code=sm_
 
 ifeq ($(SMS),)
 # Generate PTX code from SM 20
-GENCODE_FLAGS += -gencode arch=compute_20,code=compute_20
+GENCODE_FLAGS += -gencode arch=compute_52,code=compute_52
 endif
 
 # Generate PTX code from the highest SM architecture in $(SMS) to guarantee forward-compatibility
@@ -230,7 +230,7 @@ endif
 
 INCLUDES += -I../common/UtilNPP -I../common/FreeImage/include
 
-LIBRARIES += -L../common/FreeImage/lib/ -L../common/FreeImage/lib/$(TARGET_OS) -L../common/FreeImage/lib/$(TARGET_OS)/$(TARGET_ARCH) -lnppi_static -lnppc_static -lculibos -lfreeimage
+LIBRARIES += -L../common/FreeImage/lib/ -L../common/FreeImage/lib/$(TARGET_OS) -L../common/FreeImage/lib/$(TARGET_OS)/$(TARGET_ARCH) -lnppial_static -lnppicc_static -lnppidei_static -lnppif_static -lnppig_static -lnppim_static -lnppist_static -lnppisu_static -lnppitc_static -lnppc_static -lculibos -lfreeimage
 
 # Attempt to compile a minimal application linked against FreeImage. If a.out exists, FreeImage is properly set up.
 $(shell echo "#include \"FreeImage.h\"" > test.c; echo "int main() { return 0; }" >> test.c ; $(NVCC) $(ALL_CCFLAGS) $(INCLUDES) $(LIBRARIES) -l freeimage test.c)

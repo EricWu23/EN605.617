@@ -34,7 +34,7 @@
 inline int cudaDeviceInit(int argc, const char **argv)
 {
     int deviceCount;
-    checkCudaErrors(cudaGetDeviceCount(&deviceCount));
+    checkCudaErrors(cudaGetDeviceCount(&deviceCount));//Returns the number of devices with compute capability greater or equal to 2.0
 
     if (deviceCount == 0)
     {
@@ -87,18 +87,18 @@ int main(int argc, char *argv[])
             exit(EXIT_SUCCESS);
         }
 
-        if (checkCmdLineFlag(argc, (const char **)argv, "input"))
+        if (checkCmdLineFlag(argc, (const char **)argv, "input"))// if commandline  contains input=
         {
-            getCmdLineArgumentString(argc, (const char **)argv, "input", &filePath);
+            getCmdLineArgumentString(argc, (const char **)argv, "input", &filePath);// filePath will contain a pointer pointing to the starting location that contains the filePath
         }
         else
         {
-            filePath = sdkFindFilePath("Lena.pgm", argv[0]);
+            filePath = sdkFindFilePath("Lena.pgm", argv[0]);// find the path to file "Lena.pgm" from a list of predefined search paths
         }
 
         if (filePath)
         {
-            sFilename = filePath;
+            sFilename = filePath;// if we found the full path to the Lena.pgm
         }
         else
         {
@@ -148,10 +148,10 @@ int main(int argc, char *argv[])
         // declare a host image object for an 8-bit grayscale image
         npp::ImageCPU_8u_C1 oHostSrc;
         // load gray-scale image from disk
-        npp::loadImage(sFilename, oHostSrc);
+        npp::loadImage(sFilename, oHostSrc);//sFilename-->oHostSrc
         // declare a device image and copy construct from the host image,
         // i.e. upload host to device
-        npp::ImageNPP_8u_C1 oDeviceSrc(oHostSrc);
+        npp::ImageNPP_8u_C1 oDeviceSrc(oHostSrc);// oHostSrc --> oDeviceSrc
 
         // create struct with box-filter mask size
         NppiSize oMaskSize = {5, 5};
