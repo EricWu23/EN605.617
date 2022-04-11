@@ -35,6 +35,7 @@ int main(int argc, char** argv)
    //testKernel(*(kernel_names+0));
     //testKernel(*(kernel_names+1));
    //testKernel(*(kernel_names+2));
-    testKernel(*(kernel_names+3));
+    //testKernel(*(kernel_names+3));
+    testKernel(*(kernel_names+4));
     return 0;
 }

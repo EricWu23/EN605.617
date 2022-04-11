@@ -12,11 +12,12 @@
 #include "supportOpencl.h"
 #include "assignment.h"
 
-const char kernel_names[4][20] = {
+const char kernel_names[5][20] = {
                          "vectorAdd",
                          "vectorSubtract",
                          "vectorMult",
-                         "vectorDiv"
+                         "vectorDiv",
+                         "vectorPow"
                      };
 
 int testKernel(const char *  kernel_name){
