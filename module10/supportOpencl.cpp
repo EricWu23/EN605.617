@@ -90,7 +90,7 @@ cl_command_queue CreateCommandQueue(cl_context context, cl_device_id *device)
     // In this example, we just choose the first available device.  In a
     // real program, you would likely use all available devices or choose
     // the highest performance device based on OpenCL device queries
-    commandQueue = clCreateCommandQueue(context, devices[0], 0, NULL);
+    commandQueue = clCreateCommandQueue(context, devices[0], CL_QUEUE_PROFILING_ENABLE, NULL);
     if (commandQueue == NULL)
     {
         delete [] devices;

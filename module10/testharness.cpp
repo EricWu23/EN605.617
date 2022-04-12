@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 #include "testharness.h"
 #include "supportOpencl.h"
 #include "assignment.h"
@@ -95,16 +96,23 @@ int testKernel(const char *  kernel_name){
     size_t localWorkSize[1] = { 1 };
 
     // Queue the kernel up for execution across the array
+    cl_event event;
     errNum = clEnqueueNDRangeKernel(commandQueue, kernel, 1, NULL,
                                     globalWorkSize, localWorkSize,
-                                    0, NULL, NULL);
+                                    0, NULL, &event);
     if (errNum != CL_SUCCESS)
     {
         std::cerr << "Error queuing kernel for execution." << std::endl;
         Cleanup(context, commandQueue, program, kernel, memObjects);
         return 1;
     }
-
+    clWaitForEvents(1, &event);
+    clFinish(commandQueue);
+    cl_ulong time_start;cl_ulong time_end;
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
+    double nanoSeconds = time_end-time_start;
+    std::cout << "Kernel execution "<<kernel_name <<" took "<<nanoSeconds/1000000.0<<" milli seconds."<<std::endl;
     // Read the output buffer back to the Host
     errNum = clEnqueueReadBuffer(commandQueue, memObjects[2], CL_TRUE,
                                  0, ARRAY_SIZE * sizeof(float), result,
