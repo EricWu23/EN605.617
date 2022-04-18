@@ -260,9 +260,11 @@ unsigned int outputSignalWidth,unsigned int outputSignalHeight){
 
 void testHarness(){
 
+    unsigned int padding=0;
+    unsigned int stride=0;
     // init a 2-D input array
-    const unsigned int inputSignalWidth  = 8;
-    const unsigned int inputSignalHeight = 8;
+    const unsigned int inputSignalWidth  = 49;
+    const unsigned int inputSignalHeight = 49;
     cl_uint inputSignal[inputSignalHeight][inputSignalWidth]={0};
     // cl_uint inputSignal[inputSignalHeight][inputSignalWidth] =
     // {
@@ -278,15 +280,21 @@ void testHarness(){
     cpu_array0_int<cl_uint>(&inputSignal[0][0],inputSignalHeight,inputSignalWidth);
 
     // init a 2-D mask array
-    const unsigned int maskWidth  = 3;
-    const unsigned int maskHeight = 3;
+    const unsigned int maskWidth  = 7;
+    const unsigned int maskHeight = 7;
      cl_uint mask[maskHeight][maskWidth] =
      {
-     	{1, 1, 1}, {1, 0, 1}, {1, 1, 1},
+     	{25,25,25,25,25,25,25},
+        {25,50,50,50,50,50,25},
+        {25,50,75,75,75,50,25},
+        {25,50,75,100,75,50,25},
+        {25,50,75,75,75,50,25},
+        {25,50,50,50,50,50,25},
+        {25,25,25,25,25,25,25}
      };
     // init a 2-D output array
-     const unsigned int outputSignalWidth  = 6;
-     const unsigned int outputSignalHeight = 6;
+     const unsigned int outputSignalWidth  = (inputSignalWidth-2*padding+maskWidth)/stride+1;
+     const unsigned int outputSignalHeight = (inputSignalHeight-2*padding+maskHeight)/stride+1;
      cl_uint outputSignal[outputSignalHeight][outputSignalWidth];
     // call the testconvolve
     
