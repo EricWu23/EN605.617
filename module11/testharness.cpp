@@ -18,36 +18,6 @@
 #define CL_CALLBACK
 #endif
 
-// Constants
-const unsigned int inputSignalWidth  = 8;
-const unsigned int inputSignalHeight = 8;
-
-cl_uint inputSignal[inputSignalHeight][inputSignalWidth] =
-{
-	{3, 1, 1, 4, 8, 2, 1, 3},
-	{4, 2, 1, 1, 2, 1, 2, 3},
-	{4, 4, 4, 4, 3, 2, 2, 2},
-	{9, 8, 3, 8, 9, 0, 0, 0},
-	{9, 3, 3, 9, 0, 0, 0, 0},
-	{0, 9, 0, 8, 0, 0, 0, 0},
-	{3, 0, 8, 8, 9, 4, 4, 4},
-	{5, 9, 8, 1, 8, 1, 1, 1}
-};
-
-const unsigned int outputSignalWidth  = 6;
-const unsigned int outputSignalHeight = 6;
-
-cl_uint outputSignal[outputSignalHeight][outputSignalWidth];
-
-const unsigned int maskWidth  = 3;
-const unsigned int maskHeight = 3;
-
-cl_uint mask[maskHeight][maskWidth] =
-{
-	{1, 1, 1}, {1, 0, 1}, {1, 1, 1},
-};
-
-///
 // Function to check and handle OpenCL errors
 inline void 
 checkErr(cl_int err, const char * name)
@@ -72,7 +42,11 @@ void CL_CALLBACK contextCallback(
 }
 
 
-int testKernel(const char *  kernel_name){
+static int testconvolve(cl_uint* inputSignal,cl_uint* mask, cl_uint* outputSignal,
+unsigned int inputSignalWidth,unsigned int inputSignalHeight,
+unsigned int maskWidth,unsigned int maskHeight,
+unsigned int outputSignalWidth,unsigned int outputSignalHeight){
+
 
     cl_int errNum;
     cl_uint numPlatforms;
@@ -193,7 +167,7 @@ int testKernel(const char *  kernel_name){
     //6. Create kernel object using the program object
 	kernel = clCreateKernel(
 		program,
-		kernel_name,
+		"convolve",
 		&errNum);
 	checkErr(errNum, "clCreateKernel"); 
 
@@ -273,7 +247,7 @@ int testKernel(const char *  kernel_name){
 	{
 		for (int x = 0; x < outputSignalWidth; x++)
 		{
-			std::cout << outputSignal[y][x] << " ";
+			std::cout << outputSignal[y*outputSignalWidth+x] << " ";
 		}
 		std::cout << std::endl;
 	}
@@ -281,4 +255,43 @@ int testKernel(const char *  kernel_name){
     std::cout << std::endl << "Executed program succesfully." << std::endl;
 
 	return 0;
+}
+
+void testHarness(){
+
+    // init a 2-D input array
+    const unsigned int inputSignalWidth  = 8;
+    const unsigned int inputSignalHeight = 8;
+    //cl_uint inputSignal[inputSignalHeight][inputSignalWidth]={0};
+    cl_uint inputSignal[inputSignalHeight][inputSignalWidth] =
+    {
+        {3, 1, 1, 4, 8, 2, 1, 3},
+        {4, 2, 1, 1, 2, 1, 2, 3},
+        {4, 4, 4, 4, 3, 2, 2, 2},
+        {9, 8, 3, 8, 9, 0, 0, 0},
+        {9, 3, 3, 9, 0, 0, 0, 0},
+        {0, 9, 0, 8, 0, 0, 0, 0},
+        {3, 0, 8, 8, 9, 4, 4, 4},
+        {5, 9, 8, 1, 8, 1, 1, 1}
+    };
+    //cpu_array0_int<cl_uint>(inputSignal,inputSignalHeight,inputSignalWidth);
+
+    // init a 2-D mask array
+    const unsigned int maskWidth  = 3;
+    const unsigned int maskHeight = 3;
+     cl_uint mask[maskHeight][maskWidth] =
+     {
+     	{1, 1, 1}, {1, 0, 1}, {1, 1, 1},
+     };
+    // init a 2-D output array
+     const unsigned int outputSignalWidth  = 6;
+     const unsigned int outputSignalHeight = 6;
+     cl_uint outputSignal[outputSignalHeight][outputSignalWidth];
+    // call the testconvolve
+    
+    testconvolve(&inputSignal[0][0],&mask[0][0],&outputSignal[0][0],
+                 inputSignalWidth,inputSignalHeight,
+                 maskWidth,maskHeight,
+                 outputSignalWidth,outputSignalHeight);
+
 }

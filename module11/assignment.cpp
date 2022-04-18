@@ -16,12 +16,11 @@
 #include "assignment.h"
 #include "testharness.h"
 
-
 ///
 //	main() for Convolution example
 //
 int main(int argc, char** argv)
 {
-   testKernel("convolve");
+   testHarness();
    return 0;
 }
