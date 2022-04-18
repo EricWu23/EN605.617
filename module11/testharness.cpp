@@ -13,6 +13,7 @@
 #include "testharness.h"
 //#include "supportOpencl.h"
 #include "assignment.h"
+#include "utility.h"
 
 #if !defined(CL_CALLBACK)
 #define CL_CALLBACK
@@ -262,19 +263,19 @@ void testHarness(){
     // init a 2-D input array
     const unsigned int inputSignalWidth  = 8;
     const unsigned int inputSignalHeight = 8;
-    //cl_uint inputSignal[inputSignalHeight][inputSignalWidth]={0};
-    cl_uint inputSignal[inputSignalHeight][inputSignalWidth] =
-    {
-        {3, 1, 1, 4, 8, 2, 1, 3},
-        {4, 2, 1, 1, 2, 1, 2, 3},
-        {4, 4, 4, 4, 3, 2, 2, 2},
-        {9, 8, 3, 8, 9, 0, 0, 0},
-        {9, 3, 3, 9, 0, 0, 0, 0},
-        {0, 9, 0, 8, 0, 0, 0, 0},
-        {3, 0, 8, 8, 9, 4, 4, 4},
-        {5, 9, 8, 1, 8, 1, 1, 1}
-    };
-    //cpu_array0_int<cl_uint>(inputSignal,inputSignalHeight,inputSignalWidth);
+    cl_uint inputSignal[inputSignalHeight][inputSignalWidth]={0};
+    // cl_uint inputSignal[inputSignalHeight][inputSignalWidth] =
+    // {
+    //     {3, 1, 1, 4, 8, 2, 1, 3},
+    //     {4, 2, 1, 1, 2, 1, 2, 3},
+    //     {4, 4, 4, 4, 3, 2, 2, 2},
+    //     {9, 8, 3, 8, 9, 0, 0, 0},
+    //     {9, 3, 3, 9, 0, 0, 0, 0},
+    //     {0, 9, 0, 8, 0, 0, 0, 0},
+    //     {3, 0, 8, 8, 9, 4, 4, 4},
+    //     {5, 9, 8, 1, 8, 1, 1, 1}
+    // };
+    cpu_array0_int<cl_uint>(&inputSignal[0][0],inputSignalHeight,inputSignalWidth);
 
     // init a 2-D mask array
     const unsigned int maskWidth  = 3;
