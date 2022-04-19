@@ -201,7 +201,7 @@ unsigned int outputSignalWidth,unsigned int outputSignalHeight){
 	queue = clCreateCommandQueue(
 		context,
 		deviceIDs[0],
-		0,
+		CL_QUEUE_PROFILING_ENABLE,
 		&errNum);
 	checkErr(errNum, "clCreateCommandQueue");
 
@@ -217,6 +217,8 @@ unsigned int outputSignalWidth,unsigned int outputSignalHeight){
     const size_t globalWorkSize[2] = { outputSignalWidth, outputSignalHeight };
     const size_t localWorkSize[2]  = { 1, 1 };
 
+    // Queue the kernel up for execution across the array
+    cl_event event;
     errNum = clEnqueueNDRangeKernel(
 		queue, 
 		kernel, 
@@ -226,9 +228,16 @@ unsigned int outputSignalWidth,unsigned int outputSignalHeight){
 		localWorkSize,
         0, 
 		NULL, 
-		NULL);
+		&event);
 	checkErr(errNum, "clEnqueueNDRangeKernel");
-
+    
+    clWaitForEvents(1, &event);
+    clFinish(queue);
+    cl_ulong time_start; cl_ulong time_end;
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
+    double nanoSeconds = time_end-time_start;
+    std::cout << "Kernel execution "<<"convolve" <<" took "<<nanoSeconds/1000000.0<<" milli seconds."<<std::endl;
 
     //11. read the result  
     errNum = clEnqueueReadBuffer(
@@ -261,7 +270,7 @@ unsigned int outputSignalWidth,unsigned int outputSignalHeight){
 void testHarness(){
 
     unsigned int padding=0;
-    unsigned int stride=0;
+    unsigned int stride=1;
     // init a 2-D input array
     const unsigned int inputSignalWidth  = 49;
     const unsigned int inputSignalHeight = 49;
@@ -293,8 +302,9 @@ void testHarness(){
         {25,25,25,25,25,25,25}
      };
     // init a 2-D output array
-     const unsigned int outputSignalWidth  = (inputSignalWidth-2*padding+maskWidth)/stride+1;
-     const unsigned int outputSignalHeight = (inputSignalHeight-2*padding+maskHeight)/stride+1;
+     const unsigned int outputSignalWidth  = (inputSignalWidth+2*padding-maskWidth)/stride+1;
+     const unsigned int outputSignalHeight = (inputSignalHeight+2*padding-maskHeight)/stride+1;
+
      cl_uint outputSignal[outputSignalHeight][outputSignalWidth];
     // call the testconvolve
     
