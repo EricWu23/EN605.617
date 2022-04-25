@@ -78,8 +78,8 @@ int main(int argc, char** argv)
        (errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS), 
        "clGetPlatformIDs");
 
-    std::ifstream srcFile("simple.cl");
-    checkErr(srcFile.is_open() ? CL_SUCCESS : -1, "reading simple.cl");
+    std::ifstream srcFile("mathkernel.cl");
+    checkErr(srcFile.is_open() ? CL_SUCCESS : -1, "reading mathkernel.cl");
 
     std::string srcProg(
         std::istreambuf_iterator<char>(srcFile),
@@ -273,7 +273,7 @@ int main(int argc, char** argv)
       errNum = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&buffers[i]);
       errNum |= clSetKernelArg(kernel, 1, sizeof(cl_uint), &subbuffer_width);
       errNum |= clSetKernelArg(kernel, 2, sizeof(cl_uint), &subbuffer_height);
-      errNum |= clSetKernelArg(kernel, 3, sizeof(cl_uint), &outputbuffers[i]);
+      errNum |= clSetKernelArg(kernel, 3, sizeof(cl_mem),(void *)&outputbuffers[i]);
       checkErr(errNum, "clSetKernelArg(averagebuffer)");
       // call kernel for each subbuffer
       cl_event event;
