@@ -6,6 +6,7 @@
 #include <vector>
 #include "info.hpp"
 #include "testharness.h"
+#include "supportOpencl.h"
 
 #define DEFAULT_PLATFORM 0
 #define DEFAULT_USE_MAP false
@@ -13,16 +14,6 @@
 #define NUM_BUFFER_ELEMENTS 16
 #define SUB_BUFFER_WIDTH 2
 #define SUB_BUFFER_HEIGHT 2
-
-// Function to check and handle OpenCL errors
-inline void 
-checkErr(cl_int err, const char * name)
-{
-    if (err != CL_SUCCESS) {
-        std::cerr << "ERROR: " <<  name << " (" << err << ")" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-}
 
 
 void testHarness(){
@@ -47,20 +38,7 @@ void testHarness(){
 
 
     // First, select an OpenCL platform to run on.  
-    errNum = clGetPlatformIDs(0, NULL, &numPlatforms);
-    checkErr( 
-        (errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS), 
-        "clGetPlatformIDs"); 
- 
-    platformIDs = (cl_platform_id *)alloca(
-            sizeof(cl_platform_id) * numPlatforms);
-
-    std::cout << "Number of platforms: \t" << numPlatforms << std::endl; 
-
-    errNum = clGetPlatformIDs(numPlatforms, platformIDs, NULL);
-    checkErr( 
-       (errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS), 
-       "clGetPlatformIDs");
+    GetPlatformIDs(numPlatforms,platformIDs);
 
     std::ifstream srcFile("mathkernel.cl");
     checkErr(srcFile.is_open() ? CL_SUCCESS : -1, "reading mathkernel.cl");
