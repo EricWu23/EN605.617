@@ -18,18 +18,17 @@ void checkErr(cl_int err, const char * name)
         exit(EXIT_FAILURE);
     }
 }
+cl_int GetNumOfPlatforms(cl_uint* numPlatforms){
+    cl_int errNum;
+    errNum = clGetPlatformIDs(0, NULL, numPlatforms);
+    checkErr( 
+        (errNum != CL_SUCCESS) ? errNum : (*numPlatforms <= 0 ? -1 : CL_SUCCESS), 
+        "clGetPlatformIDs");
+    std::cout << "Number of platforms: \t" << *numPlatforms << std::endl; 
+}
 
 cl_int GetPlatformIDs(cl_uint numPlatforms,cl_platform_id * platformIDs){
     cl_int errNum;
-    errNum = clGetPlatformIDs(0, NULL, &numPlatforms);
-    checkErr( 
-        (errNum != CL_SUCCESS) ? errNum : (numPlatforms <= 0 ? -1 : CL_SUCCESS), 
-        "clGetPlatformIDs"); 
- 
-    platformIDs = (cl_platform_id *)alloca(
-            sizeof(cl_platform_id) * numPlatforms);
-
-    std::cout << "Number of platforms: \t" << numPlatforms << std::endl; 
 
     errNum = clGetPlatformIDs(numPlatforms, platformIDs, NULL);
     checkErr( 
@@ -38,96 +37,53 @@ cl_int GetPlatformIDs(cl_uint numPlatforms,cl_platform_id * platformIDs){
     return errNum;
 }
 
+cl_int GetNumOfAvaliableDevices(cl_uint* numDevices,cl_platform_id platform,cl_device_type device_type){
+  cl_int errNum;
+  errNum = clGetDeviceIDs(
+        platform, 
+        device_type, 
+        0,
+        NULL,
+        numDevices);
+    if (errNum != CL_SUCCESS && errNum != CL_DEVICE_NOT_FOUND)
+    {
+        checkErr(errNum, "clGetDeviceIDs");
+    }     
+}
 
-cl_context CreateContext()
+cl_int GetDeviceIDs(cl_platform_id platform,cl_device_type device_type,cl_uint num_entry,cl_device_id *devices,cl_uint *num_devices){
+    cl_int errNum;
+    errNum = clGetDeviceIDs(
+        platform,
+        device_type,
+        num_entry, 
+        devices, 
+        NULL);
+    checkErr(errNum, "clGetDeviceIDs");
+}
+
+cl_context CreateContext(cl_platform_id PlatformId,cl_uint num_devices,const cl_device_id *devices)
 {
     cl_int errNum;
     cl_uint numPlatforms;
-    cl_platform_id firstPlatformId;
     cl_context context = NULL;
 
-    // First, select an OpenCL platform to run on.  For this example, we
-    // simply choose the first available platform.  Normally, you would
-    // query for all available platforms and select the most appropriate one.
-    errNum = clGetPlatformIDs(1, &firstPlatformId, &numPlatforms);
-    if (errNum != CL_SUCCESS || numPlatforms <= 0)
-    {
-        std::cerr << "Failed to find any OpenCL platforms." << std::endl;
-        return NULL;
-    }
-
-    // Next, create an OpenCL context on the platform.  Attempt to
-    // create a GPU-based context, and if that fails, try to create
-    // a CPU-based context.
     cl_context_properties contextProperties[] =
     {
         CL_CONTEXT_PLATFORM,
-        (cl_context_properties)firstPlatformId,
+        (cl_context_properties)PlatformId,
         0
     };
-    context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU,
-                                      NULL, NULL, &errNum);
-    if (errNum != CL_SUCCESS)
-    {
-        std::cout << "Could not create GPU context, trying CPU..." << std::endl;
-        context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_CPU,
-                                          NULL, NULL, &errNum);
-        if (errNum != CL_SUCCESS)
-        {
-            std::cerr << "Failed to create an OpenCL GPU or CPU context." << std::endl;
-            return NULL;
-        }
-    }
+    context = clCreateContext(
+        contextProperties, 
+        num_devices,
+        devices, 
+        NULL,
+        NULL, 
+        &errNum);
+    checkErr(errNum, "clCreateContext");
 
     return context;
-}
-
-
-cl_command_queue CreateCommandQueue(cl_context context, cl_device_id *device)
-{
-    cl_int errNum;
-    cl_device_id *devices;
-    cl_command_queue commandQueue = NULL;
-    size_t deviceBufferSize = -1;
-
-    // First get the size of the devices buffer
-    errNum = clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL, &deviceBufferSize);
-    if (errNum != CL_SUCCESS)
-    {
-        std::cerr << "Failed call to clGetContextInfo(...,GL_CONTEXT_DEVICES,...)";
-        return NULL;
-    }
-
-    if (deviceBufferSize <= 0)
-    {
-        std::cerr << "No devices available.";
-        return NULL;
-    }
-
-    // Allocate memory for the devices buffer
-    devices = new cl_device_id[deviceBufferSize / sizeof(cl_device_id)];
-    errNum = clGetContextInfo(context, CL_CONTEXT_DEVICES, deviceBufferSize, devices, NULL);
-    if (errNum != CL_SUCCESS)
-    {
-        delete [] devices;
-        std::cerr << "Failed to get device IDs";
-        return NULL;
-    }
-
-    // In this example, we just choose the first available device.  In a
-    // real program, you would likely use all available devices or choose
-    // the highest performance device based on OpenCL device queries
-    commandQueue = clCreateCommandQueue(context, devices[0], CL_QUEUE_PROFILING_ENABLE, NULL);
-    if (commandQueue == NULL)
-    {
-        delete [] devices;
-        std::cerr << "Failed to create commandQueue for device 0";
-        return NULL;
-    }
-
-    *device = devices[0];
-    delete [] devices;
-    return commandQueue;
 }
 
 
@@ -174,25 +130,16 @@ cl_program CreateProgram(cl_context context, cl_device_id device, const char* fi
     return program;
 }
 
-
-void Cleanup(cl_context context, cl_command_queue commandQueue,
-             cl_program program, cl_kernel kernel, cl_mem memObjects[3])
+cl_command_queue CreateCommandQueue(cl_context context, cl_device_id device)
 {
-    for (int i = 0; i < 3; i++)
-    {
-        if (memObjects[i] != 0)
-            clReleaseMemObject(memObjects[i]);
-    }
-    if (commandQueue != 0)
-        clReleaseCommandQueue(commandQueue);
+    cl_int errNum;
+    cl_command_queue commandQueue = NULL;
 
-    if (kernel != 0)
-        clReleaseKernel(kernel);
-
-    if (program != 0)
-        clReleaseProgram(program);
-
-    if (context != 0)
-        clReleaseContext(context);
-
+	commandQueue = clCreateCommandQueue(
+		context,
+		device,
+		CL_QUEUE_PROFILING_ENABLE,
+		&errNum);
+	checkErr(errNum, "clCreateCommandQueue");
+    return commandQueue;
 }

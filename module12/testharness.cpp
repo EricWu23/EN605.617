@@ -19,7 +19,6 @@
 void testHarness(){
 
     cl_int errNum;
-    cl_uint numPlatforms;
     cl_uint numDevices;
     cl_platform_id * platformIDs;
     cl_device_id * deviceIDs;
@@ -29,122 +28,44 @@ void testHarness(){
     std::vector<cl_mem> outputbuffers;//vector storing the subbuffers for output buffer
     cl_uint subbuffer_width=SUB_BUFFER_WIDTH;
     cl_uint subbuffer_height=SUB_BUFFER_HEIGHT;
-    float * inputOutput;
-
-    int platform = DEFAULT_PLATFORM; 
-
-
+    float * inputOutput;//host memmory that reused for the input and the output
+    cl_uint numPlatforms;
     std::cout << "Assignment 12: 2x2 averagebuffer as moving average" << std::endl;
-
-
-    // First, select an OpenCL platform to run on.  
-    GetPlatformIDs(numPlatforms,platformIDs);
-
-    std::ifstream srcFile("mathkernel.cl");
-    checkErr(srcFile.is_open() ? CL_SUCCESS : -1, "reading mathkernel.cl");
-
-    std::string srcProg(
-        std::istreambuf_iterator<char>(srcFile),
-        (std::istreambuf_iterator<char>()));
-
-    const char * src = srcProg.c_str();
-    size_t length = srcProg.length();
-
-    deviceIDs = NULL;
-    DisplayPlatformInfo(
-        platformIDs[platform], 
-        CL_PLATFORM_VENDOR, 
-        "CL_PLATFORM_VENDOR");
-
-    errNum = clGetDeviceIDs(
-        platformIDs[platform], 
-        CL_DEVICE_TYPE_ALL, 
-        0,
-        NULL,
-        &numDevices);
-    if (errNum != CL_SUCCESS && errNum != CL_DEVICE_NOT_FOUND)
-    {
-        checkErr(errNum, "clGetDeviceIDs");
-    }       
-
-    deviceIDs = (cl_device_id *)alloca(sizeof(cl_device_id) * numDevices);
-    errNum = clGetDeviceIDs(
-        platformIDs[platform],
-        CL_DEVICE_TYPE_ALL,
-        numDevices, 
-        &deviceIDs[0], 
-        NULL);
-    checkErr(errNum, "clGetDeviceIDs");
-
-    cl_context_properties contextProperties[] =
-    {
-        CL_CONTEXT_PLATFORM,
-        (cl_context_properties)platformIDs[platform],
-        0
-    };
-
-    context = clCreateContext(
-        contextProperties, 
-        numDevices,
-        deviceIDs, 
-        NULL,
-        NULL, 
-        &errNum);
-    checkErr(errNum, "clCreateContext");
-
-    // Create program from source
-    program = clCreateProgramWithSource(
-        context, 
-        1, 
-        &src, 
-        &length, 
-        &errNum);
-    checkErr(errNum, "clCreateProgramWithSource");
-
-    // Build program
-    errNum = clBuildProgram(
-        program,
-        numDevices,
-        deviceIDs,
-        "-I.",
-        NULL,
-        NULL);
-    if (errNum != CL_SUCCESS) 
-    {
-        // Determine the reason for the error
-        char buildLog[16384];
-        clGetProgramBuildInfo(
-            program, 
-            deviceIDs[0], 
-            CL_PROGRAM_BUILD_LOG,
-            sizeof(buildLog), 
-            buildLog, 
-            NULL);
-
-            std::cerr << "Error in OpenCL C source: " << std::endl;
-            std::cerr << buildLog;
-            checkErr(errNum, "clBuildProgram");
-    }
-        // Create command queues use the first avaliable device
-    InfoDevice<cl_device_type>::display(
-        deviceIDs[0], 
-        CL_DEVICE_TYPE, 
-        "CL_DEVICE_TYPE");
-
-    cl_command_queue queue = 
-        clCreateCommandQueue(
-            context,
-            deviceIDs[0],
-            0,
-            &errNum);
-    checkErr(errNum, "clCreateCommandQueue");
-
     
-    // create a single buffer to cover all the input data, data will be filled later
-    // for our purpose, we have to pad subbuffer_width*subbuffer_height-1 zeros
+    // First, select an OpenCL platform to run on. 
+    int platform = DEFAULT_PLATFORM; 
+   
+    errNum=GetNumOfPlatforms(&numPlatforms);
+    platformIDs = (cl_platform_id *)alloca(sizeof(cl_platform_id) * numPlatforms);
+    errNum=GetPlatformIDs(numPlatforms,platformIDs);
+    DisplayPlatformInfo(platformIDs[platform], CL_PLATFORM_VENDOR, "CL_PLATFORM_VENDOR");
+    
+    // Second,Check avaliable Devices on the platform and select a device
+    deviceIDs = NULL;
+    errNum = GetNumOfAvaliableDevices(&numDevices,platformIDs[platform],CL_DEVICE_TYPE_ALL);
+    deviceIDs = (cl_device_id *)alloca(sizeof(cl_device_id) * numDevices);
+    errNum = GetDeviceIDs(platformIDs[platform],CL_DEVICE_TYPE_ALL,numDevices,&deviceIDs[0],NULL);
+    
+    // Third, Create a context associated with a platform and a bunch of Devices
+    context = CreateContext(platformIDs[platform],numDevices,deviceIDs);
+    
+    // Fourth, Create a program object that will be built for a specific device within a specific context using a specific source file
+    program = CreateProgram(context,deviceIDs[0],"mathkernel.cl");
+    
+    // Fifth, create a kernel object using the program object
+    cl_kernel kernel = clCreateKernel(program,"averagebuffer",&errNum);
+    checkErr(errNum, "clCreateKernel(averagebuffer)");
+    
+    // Sixth, Create command queues on a specific device in a specific context
+    InfoDevice<cl_device_type>::display(deviceIDs[0], CL_DEVICE_TYPE, "CL_DEVICE_TYPE");
+    cl_command_queue queue = CreateCommandQueue(context, deviceIDs[0]);
+
+    //Seventh, Create memory objects
+        // create a single buffer to cover all the input data, data will be filled later
+        // for our purpose, we have to pad subbuffer_width*subbuffer_height-1 zeros
     uint elementsafterpadding=NUM_BUFFER_ELEMENTS+SUB_BUFFER_WIDTH*SUB_BUFFER_HEIGHT-1;
     
-    // create buffers and sub-buffers
+ 
     inputOutput = new float[elementsafterpadding];//host
     for (unsigned int i = 0; i < NUM_BUFFER_ELEMENTS; i++)
     { 
@@ -154,7 +75,8 @@ void testHarness(){
     for(unsigned int i=NUM_BUFFER_ELEMENTS;i<elementsafterpadding;i++){
         inputOutput[i] = (float)0.0;
     }
-
+    
+   // create buffers and sub-buffers
     cl_mem main_buffer = clCreateBuffer(
         context,
         CL_MEM_READ_WRITE,
@@ -220,16 +142,11 @@ void testHarness(){
 
         outputbuffers.push_back(buffer);
     }
-
-
-    cl_kernel kernel = clCreateKernel(
-        program,
-        "averagebuffer",
-        &errNum);
-    checkErr(errNum, "clCreateKernel(averagebuffer)");
     
     std::vector<cl_event> events;
     size_t gWI =1 ;
+     
+    // Set up kernel arguments and call kernel for each subbuffer
     for (unsigned int i = 0; i < NUM_BUFFER_ELEMENTS; i++)
     {
       errNum = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&buffers[i]);
@@ -237,7 +154,7 @@ void testHarness(){
       errNum |= clSetKernelArg(kernel, 2, sizeof(cl_uint), &subbuffer_height);
       errNum |= clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&outputbuffers[i]);
       checkErr(errNum, "clSetKernelArg(averagebuffer)");
-      // call kernel for each subbuffer
+
       cl_event event;
       errNum = clEnqueueNDRangeKernel(
           queue, 
@@ -251,7 +168,14 @@ void testHarness(){
           &event);
       events.push_back(event); 
     }
+    
     clWaitForEvents(events.size(), &events[0]);
+    
+    cl_ulong time_start; cl_ulong time_end;
+    clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
+    clGetEventProfilingInfo(events[events.size()-1], CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
+    double nanoSeconds = time_end-time_start;
+    std::cout << "Kernel execution "<<"convolve" <<" took "<<nanoSeconds/1000000.0<<" milli seconds."<<std::endl;
 
       // Display inputs in rows
       std::cout << "Input Data" << std::endl;
