@@ -1,0 +1,1 @@
+g++ simple_asynch.cpp -I/usr/lib/python3.7/site-packages/pystan/stan/lib/stan_math/lib/opencl_1.2.8/  -L/usr/lib/x86_64-linux-gnu -lOpenCL -o simple_asynch
