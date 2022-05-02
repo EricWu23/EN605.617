@@ -225,8 +225,8 @@ cl_mem LoadImage(cl_context context, char *fileName, int &width, int &height)
 
     // Create OpenCL image
     cl_image_format clImageFormat;
-    clImageFormat.image_channel_order = CL_RGBA;
-    clImageFormat.image_channel_data_type = CL_UNORM_INT8;
+    clImageFormat.image_channel_order = CL_RGBA;// FOur channels of image data that will be read into the R,G,B,A components in the kernel
+    clImageFormat.image_channel_data_type = CL_UNORM_INT8;// each 8 bit integer value will be mapped to the range [0,1]
 
     cl_int errNum;
     cl_mem clImage;
@@ -389,11 +389,11 @@ int main(int argc, char** argv)
     }
 
     // Set the kernel arguments
-    errNum = clSetKernelArg(kernel, 0, sizeof(cl_mem), &imageObjects[0]);
-    errNum |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &imageObjects[1]);
-    errNum |= clSetKernelArg(kernel, 2, sizeof(cl_sampler), &sampler);
-    errNum |= clSetKernelArg(kernel, 3, sizeof(cl_int), &width);
-    errNum |= clSetKernelArg(kernel, 4, sizeof(cl_int), &height);
+    errNum = clSetKernelArg(kernel, 0, sizeof(cl_mem), &imageObjects[0]);//input imageObject
+    errNum |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &imageObjects[1]);//output imageobject
+    errNum |= clSetKernelArg(kernel, 2, sizeof(cl_sampler), &sampler);// sampler object
+    errNum |= clSetKernelArg(kernel, 3, sizeof(cl_int), &width);//width of the image to be filtered in pixels
+    errNum |= clSetKernelArg(kernel, 4, sizeof(cl_int), &height);//height of the image to be filtered in pixels
     if (errNum != CL_SUCCESS)
     {
         std::cerr << "Error setting kernel arguments." << std::endl;
