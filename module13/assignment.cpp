@@ -21,21 +21,31 @@
 #endif
 #include "assignment.h"
 #include "testharness.h"
+#include <iostream>
 ///
 //  Constants
 //
-const int ARRAY_SIZE = 1000;
+const int ARRAY_SIZE = 10;
 
 
 ///
 //	main() for HelloWorld example
 //
+
 int main(int argc, char** argv)
 {
-   testKernel(*(kernel_names+0));
-   testKernel(*(kernel_names+1));
-   testKernel(*(kernel_names+2));
-   testKernel(*(kernel_names+3));
-   testKernel(*(kernel_names+4));
-   return 0;
+  int status;
+   if (argc != 5){
+        std::cerr << "USAGE: " << argv[0] << " 0 1 2 3" << std::endl;
+        std::cout << "The 1 2 3 4 can be replaced by arbitrary permutation. For example: 2 3 1 0" << std::endl;
+        std::cout << "0 stands for a=a+b" << std::endl;
+        std::cout << "1 stands for a=a-b" << std::endl;
+        std::cout << "2 stands for a=a*b" << std::endl;
+        std::cout << "3 stands for a=a/b" << std::endl;
+        return 1;
+   }
+   
+
+   status=testKernel(argv);
+   return status;
 }
