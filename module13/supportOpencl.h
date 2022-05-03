@@ -8,7 +8,7 @@ cl_context CreateContext();
 //  Create a command queue on the first device available on the
 //  context
 //
-cl_command_queue CreateCommandQueue(cl_context context, cl_device_id *device);
+cl_command_queue CreateCommandQueue(cl_context context, cl_device_id *device,cl_command_queue_properties properties);
 ///
 //  Create an OpenCL program from the kernel source file
 //

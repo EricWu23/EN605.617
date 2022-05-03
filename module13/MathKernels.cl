@@ -1,4 +1,4 @@
-__kernel void vectorAdd(__global const float *a,
+__kernel void vectorAdd(__global float *a,
 						__global const float *b,
 						__global float *result)
 {
@@ -8,7 +8,7 @@ __kernel void vectorAdd(__global const float *a,
 }
 
 
-__kernel void vectorSubtract(__global const float *a,
+__kernel void vectorSubtract(__global float *a,
 						__global const float *b,
 						__global float *result)
 {
@@ -17,7 +17,7 @@ __kernel void vectorSubtract(__global const float *a,
     result[gid] = a[gid] - b[gid];
 }
 
-__kernel void vectorMult(__global const float *a,
+__kernel void vectorMult(__global float *a,
 						__global const float *b,
 						__global float *result)
 {
@@ -26,7 +26,7 @@ __kernel void vectorMult(__global const float *a,
     result[gid] = a[gid] * b[gid];
 }
 
-__kernel void vectorDiv(__global const float *a,
+__kernel void vectorDiv(__global float *a,
 						__global const float *b,
 						__global float *result)
 {
@@ -35,7 +35,7 @@ __kernel void vectorDiv(__global const float *a,
     result[gid] = a[gid] / b[gid];
 }
 
-__kernel void vectorPow(__global const float *a,
+__kernel void vectorPow(__global float *a,
 						__global const float *b,
 						__global float *result)
 {
